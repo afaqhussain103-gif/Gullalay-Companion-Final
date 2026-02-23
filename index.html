@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Gullalay">
+  <meta name="theme-color" content="#FF69B4">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Gullalay's Companion</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; overflow: hidden;
+      -webkit-text-size-adjust: 100%; -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Nunito', -apple-system, sans-serif; }
+    #app { height: 100%; width: 100%; }
+    ::-webkit-scrollbar { display: none; }
+    input, textarea, button { font-family: inherit; }
+    input::placeholder, textarea::placeholder { opacity: 0.5; }
+
+    @keyframes pulse3 {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.92); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes splashIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes flowerSpin {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(10deg) scale(1.08); }
+      100% { transform: rotate(0deg) scale(1); }
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 0.35; }
+      50% { opacity: 0.85; }
+    }
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      25% { transform: scale(1.12); }
+      50% { transform: scale(1); }
+      75% { transform: scale(1.06); }
+    }
+    @keyframes shimmerSlide {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .fade-up { animation: fadeUp 0.4s ease-out both; }
+    .scale-in { animation: scaleIn 0.3s ease-out both; }
+    .splash-anim { animation: splashIn 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTH_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYS = ["S","M","T","W","T","F","S"];
+
+const MOODS = [
+  { emoji: "😊", label: "Happy",    color: "#FFD93D" },
+  { emoji: "🥰", label: "Loved",    color: "#FD79A8" },
+  { emoji: "😌", label: "Calm",     color: "#81ECEC" },
+  { emoji: "😴", label: "Tired",    color: "#A29BFE" },
+  { emoji: "😢", label: "Sad",      color: "#74B9FF" },
+  { emoji: "😰", label: "Anxious",  color: "#FDCB6E" },
+  { emoji: "😤", label: "Irritated",color: "#FF6B6B" },
+  { emoji: "🥺", label: "Emotional",color: "#FD79A8" },
+  { emoji: "⚡", label: "Energetic",color: "#FDCB6E" },
+  { emoji: "💕", label: "Romantic", color: "#FF6B9D" },
+  { emoji: "🤢", label: "Nauseous", color: "#55EFC4" },
+  { emoji: "💪", label: "Strong",   color: "#00CEC9" },
+];
+
+const SYMPTOMS = ["Cramps","Bloating","Headache","Back Pain","Breast Tenderness","Acne","Fatigue","Insomnia","Cravings","Dizziness","Nausea","Hot Flashes"];
+
+const FLOW_LEVELS = [
+  { id: "none",      label: "None",       icon: "✨", desc: "No flow" },
+  { id: "spotting",  label: "Spotting",   icon: "💧", desc: "Light discharge" },
+  { id: "discharge", label: "Discharge",  icon: "🌸", desc: "Pre-period" },
+  { id: "light",     label: "Light",      icon: "🩸", desc: "Light flow" },
+  { id: "medium",    label: "Medium",     icon: "🌊", desc: "Regular flow" },
+  { id: "heavy",     label: "Heavy",      icon: "🔴", desc: "Heavy flow" },
+  { id: "super",     label: "Super",      icon: "💀", desc: "Very heavy" },
+];
+
+// ─── Nicknames (Afaq's names for Gullalay) ───────────────────────────────────
+const NICKNAMES = ["Gul Jaane","Lalay","Gudai","Zargo","Momal","Zama khesta Bachai","Ghate mekhe","Gul"];
+const nick = () => NICKNAMES[Math.floor(Math.random() * NICKNAMES.length)];
+
+// ─── Verified Authentic Pashto Poetry ────────────────────────────────────────
+// Sourced from studyandexam.com, Rahman Baba, Ghani Khan, Hamza Baba, Fahad Zeb
+const PASHTO_POETRY = [
+  { ps: "Che di zan sara adat kram oos wala juda shwe — Che me zra pa sabredo sho ta wali pa jara shwe", en: "I got used to you, why have you left — when my heart learned patience, why did you cry", poet: "Rahman Baba" },
+  { ps: "Da khpal husan na be-khabari kabar-jani jenie — Pa tol Khyber ba zalzala she, stargi ma tora wa", en: "Unaware of your beauty, proud girl — all Khyber would tremble, don't turn those eyes away", poet: "Rahman Baba" },
+  { ps: "Zama meena khpal sitam ba dar maloom shi — Lag saat la ta Hamza Za ba janan sham", en: "My love will make its pain known — wait just a moment, I will become your beloved", poet: "Hamza Baba" },
+  { ps: "Sta da setam hagha yawa adaa me na heeregi — Ma che jaral ta me salgo pore khanda kawal", en: "That way of yours, I cannot forget — while I cried, you laughed through sobs", poet: "" },
+  { ps: "Na pohegam che da wali ao da sala — Sta nama razi zama pa khwala pakhpala", en: "I don't understand why and how — your name comes to my lips on its own", poet: "" },
+  { ps: "Lag sam stargo ta ogora ao poye sha kana — Hara khabara kho janana da kawalo na wi", en: "Just look into my eyes and understand — not every feeling, my beloved, can be put into words", poet: "" },
+  { ps: "Dasi warta ma gora zargia lewane ba she — Da kho ye muska da che khanda be ye la sanga wi", en: "Don't look at her like that, heart — that's just her smile, imagine her full laugh", poet: "" },
+  { ps: "Gham ba rasara wi khushali ba pa ma teera wi — Ta che zama keegay nu zwani ba ma teera wi", en: "Sorrow will stay with me, happiness will pass — but if you become mine, even youth can pass", poet: "" },
+  { ps: "Ma de yadona da khpal umar wazeefa newali — Khuday khabar sta charta fikar ki razama ao ka na", en: "Remembering you has become the daily prayer of my life — God knows whether I'm in your thoughts too", poet: "" },
+  { ps: "Sta pa shakman zra ki ba da wi tre heera ba yama — Da kholay na wena gorzawam ta heera wale na sham", en: "You may think I'll be forgotten — I pour blood from this mouth rather than forget you", poet: "" },
+  { ps: "Somra rang pa rang khabare zma zda di — Kho gongay shama che ta ta makhamakh sham", en: "I know so many colorful things to say — but I go mute when I stand face to face with you", poet: "" },
+  { ps: "Stargi lewane she che da janaan stargo ta ogoori — Kher de lewane de sham yo zal stargi rawara wa", en: "Eyes go mad looking toward beloved's eyes — it's okay to go mad, just turn those eyes toward me once", poet: "" },
+  { ps: "Sal zala me heer kre kho bya hum rana heeregay na — Be-sta da yadoono me da zra koosay meerati di", en: "A hundred times I tried to forget, yet couldn't — without your memories, my heart's home is filled with sadness", poet: "" },
+  { ps: "Hairan pa de yam che sabot da meene sa darkam — Khwakha de na da che pa las ki darla zra darkam", en: "I am amazed — what proof of love can I give you — isn't it enough that I hand you my heart in my palm", poet: "" },
+  { ps: "Ta pa khpala khwakha jwand kawa sareya — Dalta ki keegi Parishto pase khabari", en: "Live your life by your own happiness, dear one — here, angels speak about you", poet: "" },
+  { ps: "Za Ghani sham lewane pa hagha wakht ki — Che ashna kala ashna stargi na-ashna kri", en: "I go mad at that moment when familiar eyes become unfamiliar", poet: "Ghani Khan" },
+  { ps: "Umar me teer sho pa jaralo, da ashna pa yadawalo — Ghani somra lewane de che wafa gware da khkwalo", en: "My life passed in tears, remembering the beloved — so mad he demands loyalty from beautiful ones", poet: "Ghani Khan" },
+  { ps: "Zama Sahar Zama Makhaam Sta Sho — Zam Raahat Zama Araaam Sta Sho", en: "My morning, my evening became yours — my comfort, my peace became yours", poet: "" },
+  { ps: "Mal Da Khpalay Zindagai Yawa Lamha Ra ka — Zama chi Sumra Umar Patay De Tamaam Sta Sho", en: "Give me one moment of your life — my entire lifetime will become completely yours", poet: "" },
+  { ps: "Sta da raatlo pa tamma tamma khu mooday tairi showe — Laas pa naama darta olaar yama ta ba kala razey", en: "Waiting for you, days pass one by one — I extend my hands toward you, when will you come", poet: "" },
+  { ps: "Za yam sta pa Intezaar Zargiya — Rasha chi ra mi she qaraar Zargiya", en: "I am waiting for you, my love — come so I can find peace, my love", poet: "" },
+  { ps: "Dasay zama Zra Dunya Woraana She — Singa Chi khatam shi sta Deedaar Zargiya", en: "My heart's world became desolate — when your presence ended, my love", poet: "" },
+  { ps: "Za kho sta haga yadoono pasay Jaaram — Da Meene haga lawzoono pasay Jaaram", en: "I burn in those memories of yours — I burn in those flames of love", poet: "" },
+  { ps: "Ma sta na elawa da cha soch hum na wo karay — Os Sta Mohabbatono sta khoboona pasay Jaaram", en: "I never thought of anyone but you — I burn in your love, in your beauty", poet: "" },
+  { ps: "Darna Khatam Tol Gamoona Pakhwaani Sha — Da Gulona Na Di Hum Khaishta Zwaani Sha", en: "All sorrows ended, became sweet — even flowers became jealous of your youth", poet: "" },
+  { ps: "Da daar pa sar pa Roghaani da marg pa khob oda wi — Ta che raazay, ao bya raazay, ao la raazay sparlia", en: "I was asleep in death's dream on the gallows — but you came, and came again, and came once more, O spring", poet: "" },
+  { ps: "Zama pa khyal ke ta we, Zama pa khob ke ta we — Zama pa zra, zama zigar, zama ehsas ke ta we", en: "You were in my thoughts, you were in my dreams — in my heart, my soul, my every feeling — you were there", poet: "Fahad Zeb" },
+  { ps: "Sta pa talash ke jana ma khpal jwandoon obailo", en: "In search of you, my love, I spent my whole life", poet: "Fahad Zeb" },
+  { ps: "Weede rasha zama sang ta gule, laga da ma sha pa aram sha", en: "Come sit beside me, flower, lean on me, be at peace", poet: "Fahad Zeb" },
+  { ps: "Za ba wafa darkram, mena ba hum dera dar kram", en: "I will give you loyalty, and love you so deeply", poet: "Fahad Zeb" },
+  { ps: "Ae zama da stargo tora, ae zama da zra qarara", en: "O darkness of my eyes, O peace of my heart", poet: "Fahad Zeb" },
+  { ps: "Ma lag zaan ta Ranezday ka, Tol Gamoona Rana heer ka — Bas sta noom di rat yaad wi, Nur Nomoona rana heer ka", en: "I brought you close, forgot all sorrows — just your name remains, forgot everything else", poet: "" },
+];
+
+// ─── Love Messages (English) ──────────────────────────────────────────────────
+const LOVE_EN = [
+  "You are the most beautiful thing that ever happened to me. 🌸",
+  "Every day I fall in love with you more than the day before. 💕",
+  "You make my whole world make sense. 🌍",
+  "I would choose you in a hundred lifetimes. 💫",
+  "The sound of your name is music to my heart. 🎵",
+  "You are my beginning and my forever. ♾️",
+  "I see eternity in your eyes. 👁️",
+  "Even the stars are jealous of how beautiful you are. ⭐",
+  "You are the poetry my soul was trying to write. 📝",
+  "You are home. You are peace. You are everything. 🏡",
+  "Your smile cures everything wrong with the world. 😊",
+  "You are the dream I never want to wake up from. 💤",
+  "You are so rare, so precious, so irreplaceable. 💎",
+  "You are the warmth that makes winter feel beautiful. ❄️",
+  "Everything good in my life leads back to you. ✨",
+  "You are the reason I believe in magic. 🪄",
+  "You are beautiful in ways that go beyond the eyes. 🌹",
+  "My heart has never felt this full — that's all you. 💓",
+  "You are the calm in my storm, always. 🌈",
+  "You deserve all the softness the world has to offer. 🌸",
+  "You are my favorite person on this entire planet. 🌏",
+  "Being yours is the greatest honor of my life. 👑",
+  "You make ordinary moments feel magical. ✨",
+  "You are worth every late night, every early morning. ⏰",
+  "Your love has healed parts of me I didn't know were broken. 💊",
+  "You are so deeply cherished, every single second. 💗",
+  "Just knowing you exist makes the world feel okay. 🌏",
+  "You are everything I didn't know I needed. 🎁",
+  "You are my person. My absolute person. 💫",
+  "I love the way you love. It's the most beautiful thing. 💝",
+];
+
+const LOVE_SAD = [
+  "It's okay. I'm right here with you. You don't have to be strong right now. 🫂",
+  "Even on your hardest days, you are so deeply loved. 💙",
+  "Cry if you need to. I'll be here through all of it. 🤗",
+  "Your pain is real and I see it. You are never alone. 💜",
+  "Rest. Breathe. I love you in every version of yourself. 🫶",
+  "The storm will pass. And I'll be here when it does. 🌈",
+  "You don't have to pretend to be okay. I love you as you are right now. 💙",
+  "Ta Gullalay khogha yee — kho pa dard ke pa khogha yee. 🌸 (You are beautiful — even in pain)",
+];
+
+const LOVE_PAIN = [
+  "Rest today. You've absolutely earned it. 🛌",
+  "Take it slow. I wish I could take all your pain away. 💆",
+  "Your body is working so hard right now. Be gentle with it. 🌸",
+  "Drink warm water, use a heating pad, and know I'm sending love every second. ☕",
+  "You don't have to be okay right now. Let your body rest. 🌙",
+  "Period pain is real and brutal. You deserve all the rest in the world. 💜",
+  "Sta zra ta khoob dee. Oosa aaram kawee. 💙 (Your heart is beautiful. Rest now.)",
+];
+
+// ─── Post-Save Messages from Afaq ────────────────────────────────────────────
+const SAVE_MESSAGES_FN = [
+  () => `Saved, ${nick()}. I see you. 💙 — Afaq`,
+  () => `Logged. You're so loved, ${nick()}. 🌸 — Afaq`,
+  () => `I've got you, ${nick()}. Always. 💙 — Afaq`,
+  () => `Saved. Rest easy, ${nick()}. 🌸 — Afaq`,
+  () => `Every day you log, I love you more. 💙 — Afaq`,
+  () => `Sta noom di zama pa zra, ${nick()}. 💙 — Afaq`,
+  () => `Za sta pa intezaar yum, ${nick()}. 🌸 — Afaq`,
+  () => `Zama pa khyal ke ta we, ${nick()}. 💙 — Afaq`,
+  () => `Ta zama da zra qarara yee. 💙 — Afaq`,
+  () => `Ze ta sara yum, ${nick()}. 💙 — Afaq`,
+  () => `Zama Sahar, Zama Araaam sta sho. 🌸 — Afaq`,
+  () => `Sta meena zama zra ta jaan da. 💙 — Afaq`,
+];
+const randSaveMsg = () => SAVE_MESSAGES_FN[Math.floor(Math.random() * SAVE_MESSAGES_FN.length)]();
+const randLove = (mood) => {
+  if (mood && ['Sad','Emotional','Anxious','Tired'].includes(mood)) return LOVE_SAD[Math.floor(Math.random()*LOVE_SAD.length)];
+  if (mood && ['Nauseous','Irritated'].includes(mood)) return LOVE_PAIN[Math.floor(Math.random()*LOVE_PAIN.length)];
+  return LOVE_EN[Math.floor(Math.random()*LOVE_EN.length)];
+};
+
+// ─── Themes ───────────────────────────────────────────────────────────────────
+const THEMES = {
+  blossom:   { name:"Cherry Blossom", icon:"🌸", dark:false, bg:"linear-gradient(160deg,#FFF0F8 0%,#FFE4F0 40%,#FFDAE8 100%)", card:"rgba(255,255,255,0.82)", cardBorder:"rgba(255,182,213,0.3)", primary:"#FF69B4", primaryLight:"#FFB6D5", secondary:"#FF1493", text:"#3D1A30", textSec:"#8B6080", accent:"#FF85C8", navBg:"rgba(255,245,250,0.92)", tabActive:"#FF1493", tabInactive:"#CBA0B8", shadow:"rgba(255,105,180,0.12)", glow:"rgba(255,105,180,0.25)", periodDay:"#FF1493", predictDay:"#FFB6D5", fertileDay:"#87CEEB", ovDay:"#FF6347", chatUser:"linear-gradient(135deg,#FF69B4,#FF1493)", chatAI:"rgba(255,255,255,0.88)", hFont:"'Playfair Display',Georgia,serif" },
+  midnight:  { name:"Midnight",       icon:"🌙", dark:true,  bg:"linear-gradient(160deg,#0D0B1E 0%,#1A1040 40%,#1E1845 100%)", card:"rgba(35,30,65,0.82)", cardBorder:"rgba(138,130,200,0.18)", primary:"#A78BFA", primaryLight:"#7C5CBF", secondary:"#8B5CF6", text:"#E8E0FF", textSec:"#9B8FC0", accent:"#C084FC", navBg:"rgba(15,12,35,0.92)", tabActive:"#A78BFA", tabInactive:"#5B4D7D", shadow:"rgba(139,92,246,0.15)", glow:"rgba(167,139,250,0.25)", periodDay:"#A78BFA", predictDay:"#5B4D7D", fertileDay:"#3B82F6", ovDay:"#F59E0B", chatUser:"linear-gradient(135deg,#8B5CF6,#A78BFA)", chatAI:"rgba(35,30,65,0.88)", hFont:"'Playfair Display',Georgia,serif" },
+  sunset:    { name:"Sunset",         icon:"🌅", dark:false, bg:"linear-gradient(160deg,#FFF5E6 0%,#FFE0C0 40%,#FFD0A0 100%)", card:"rgba(255,255,255,0.82)", cardBorder:"rgba(255,165,80,0.2)", primary:"#FF8C42", primaryLight:"#FFB380", secondary:"#E8693E", text:"#4C2A10", textSec:"#9B7050", accent:"#FF6B35", navBg:"rgba(255,250,242,0.92)", tabActive:"#E8693E", tabInactive:"#C4A080", shadow:"rgba(255,140,66,0.12)", glow:"rgba(255,140,66,0.25)", periodDay:"#E8693E", predictDay:"#FFB380", fertileDay:"#4ECDC4", ovDay:"#FF6B6B", chatUser:"linear-gradient(135deg,#FF8C42,#E8693E)", chatAI:"rgba(255,255,255,0.88)", hFont:"'Playfair Display',Georgia,serif" },
+  ocean:     { name:"Ocean",          icon:"🌊", dark:false, bg:"linear-gradient(160deg,#E5F2FF 0%,#D0E8FF 40%,#B8DEFF 100%)", card:"rgba(255,255,255,0.82)", cardBorder:"rgba(100,180,255,0.2)", primary:"#3B9FE3", primaryLight:"#7EC8F8", secondary:"#1E78C0", text:"#142E48", textSec:"#5080A0", accent:"#00B4D8", navBg:"rgba(240,248,255,0.92)", tabActive:"#1E78C0", tabInactive:"#90B8D4", shadow:"rgba(59,159,227,0.12)", glow:"rgba(59,159,227,0.25)", periodDay:"#1E78C0", predictDay:"#7EC8F8", fertileDay:"#48BB78", ovDay:"#ED8936", chatUser:"linear-gradient(135deg,#3B9FE3,#1E78C0)", chatAI:"rgba(255,255,255,0.88)", hFont:"'Playfair Display',Georgia,serif" },
+  snap:      { name:"Snap Yellow",    icon:"👻", dark:false, bg:"linear-gradient(160deg,#FFFC00 0%,#FFF300 50%,#FFE800 100%)", card:"rgba(255,255,255,0.92)", cardBorder:"rgba(0,0,0,0.06)", primary:"#000000", primaryLight:"#444", secondary:"#000", text:"#000000", textSec:"#555", accent:"#FFFC00", navBg:"rgba(255,255,255,0.96)", tabActive:"#000", tabInactive:"#AAA", shadow:"rgba(0,0,0,0.08)", glow:"rgba(255,252,0,0.4)", periodDay:"#000", predictDay:"#999", fertileDay:"#00BFA5", ovDay:"#FF5252", chatUser:"linear-gradient(135deg,#000,#333)", chatAI:"rgba(245,245,245,0.95)", hFont:"'Nunito',sans-serif" },
+  lavender:  { name:"Lavender",       icon:"💜", dark:false, bg:"linear-gradient(160deg,#F0E5FF 0%,#E5D5FF 40%,#D8C5FF 100%)", card:"rgba(255,255,255,0.82)", cardBorder:"rgba(180,140,255,0.18)", primary:"#9B59B6", primaryLight:"#C39BD3", secondary:"#8E44AD", text:"#2E1548", textSec:"#7B5EA0", accent:"#BB6BD9", navBg:"rgba(248,242,255,0.92)", tabActive:"#8E44AD", tabInactive:"#B8A0C8", shadow:"rgba(155,89,182,0.12)", glow:"rgba(155,89,182,0.25)", periodDay:"#8E44AD", predictDay:"#C39BD3", fertileDay:"#27AE60", ovDay:"#F39C12", chatUser:"linear-gradient(135deg,#9B59B6,#8E44AD)", chatAI:"rgba(255,255,255,0.88)", hFont:"'Playfair Display',Georgia,serif" },
+  rosegold:  { name:"Rose Gold",      icon:"🥀", dark:false, bg:"linear-gradient(160deg,#FFF0EC 0%,#FFE0D8 40%,#FFD0C8 100%)", card:"rgba(255,255,255,0.82)", cardBorder:"rgba(220,160,140,0.2)", primary:"#E8967A", primaryLight:"#F0B8A4", secondary:"#D07060", text:"#4A2018", textSec:"#9B6858", accent:"#B76E79", navBg:"rgba(255,248,245,0.92)", tabActive:"#D07060", tabInactive:"#C4A098", shadow:"rgba(232,150,122,0.12)", glow:"rgba(232,150,122,0.25)", periodDay:"#D07060", predictDay:"#F0B8A4", fertileDay:"#5DADE2", ovDay:"#EB984E", chatUser:"linear-gradient(135deg,#E8967A,#D07060)", chatAI:"rgba(255,255,255,0.88)", hFont:"'Playfair Display',Georgia,serif" },
+  matcha:    { name:"Matcha",         icon:"🍵", dark:false, bg:"linear-gradient(160deg,#EEF5E0 0%,#E0EDD0 40%,#D4E5C0 100%)", card:"rgba(255,255,255,0.82)", cardBorder:"rgba(130,180,100,0.18)", primary:"#6B8E50", primaryLight:"#A0C878", secondary:"#4A7030", text:"#1E2E15", textSec:"#607850", accent:"#82B060", navBg:"rgba(244,250,235,0.92)", tabActive:"#4A7030", tabInactive:"#A0B890", shadow:"rgba(107,142,80,0.12)", glow:"rgba(107,142,80,0.25)", periodDay:"#4A7030", predictDay:"#A0C878", fertileDay:"#3498DB", ovDay:"#E67E22", chatUser:"linear-gradient(135deg,#6B8E50,#4A7030)", chatAI:"rgba(255,255,255,0.88)", hFont:"'Playfair Display',Georgia,serif" },
+  galaxy:    { name:"Galaxy",         icon:"🔮", dark:true,  bg:"linear-gradient(160deg,#05000F 0%,#0D0025 40%,#120030 100%)", card:"rgba(30,0,60,0.82)", cardBorder:"rgba(191,90,242,0.2)", primary:"#BF5AF2", primaryLight:"#9030C0", secondary:"#FF375F", text:"#F0E8FF", textSec:"#A080C0", accent:"#FF375F", navBg:"rgba(8,0,20,0.95)", tabActive:"#BF5AF2", tabInactive:"#604880", shadow:"rgba(191,90,242,0.2)", glow:"rgba(191,90,242,0.3)", periodDay:"#FF375F", predictDay:"#8030A0", fertileDay:"#3B82F6", ovDay:"#FFD700", chatUser:"linear-gradient(135deg,#BF5AF2,#FF375F)", chatAI:"rgba(30,0,60,0.9)", hFont:"'Playfair Display',Georgia,serif" },
+  neon:      { name:"Neon Night",     icon:"🌃", dark:true,  bg:"linear-gradient(160deg,#020009 0%,#07001A 40%,#0A0022 100%)", card:"rgba(15,0,40,0.85)", cardBorder:"rgba(255,0,255,0.15)", primary:"#FF00FF", primaryLight:"#CC00CC", secondary:"#00FFFF", text:"#FFE8FF", textSec:"#CC88CC", accent:"#00FFFF", navBg:"rgba(5,0,15,0.96)", tabActive:"#FF00FF", tabInactive:"#660066", shadow:"rgba(255,0,255,0.2)", glow:"rgba(255,0,255,0.3)", periodDay:"#FF00FF", predictDay:"#880088", fertileDay:"#00FFFF", ovDay:"#FFFF00", chatUser:"linear-gradient(135deg,#FF00FF,#00FFFF)", chatAI:"rgba(15,0,40,0.9)", hFont:"'Nunito',sans-serif" },
+  cherry:    { name:"Dark Cherry",    icon:"🍒", dark:true,  bg:"linear-gradient(160deg,#0A0005 0%,#15000A 40%,#1C0010 100%)", card:"rgba(40,0,20,0.85)", cardBorder:"rgba(220,20,60,0.2)", primary:"#DC143C", primaryLight:"#FF4060", secondary:"#FF1040", text:"#FFE8EE", textSec:"#CC8899", accent:"#FF6080", navBg:"rgba(10,0,5,0.96)", tabActive:"#DC143C", tabInactive:"#660030", shadow:"rgba(220,20,60,0.2)", glow:"rgba(220,20,60,0.3)", periodDay:"#DC143C", predictDay:"#880028", fertileDay:"#4FC3F7", ovDay:"#FFD700", chatUser:"linear-gradient(135deg,#DC143C,#FF1040)", chatAI:"rgba(40,0,20,0.9)", hFont:"'Playfair Display',Georgia,serif" },
+  gold:      { name:"Royal Gold",     icon:"👑", dark:true,  bg:"linear-gradient(160deg,#0A0800 0%,#1A1200 40%,#201800 100%)", card:"rgba(40,30,0,0.85)", cardBorder:"rgba(255,215,0,0.2)", primary:"#FFD700", primaryLight:"#FFA500", secondary:"#FFA500", text:"#FFF8E0", textSec:"#CCA840", accent:"#FFD700", navBg:"rgba(10,8,0,0.96)", tabActive:"#FFD700", tabInactive:"#665500", shadow:"rgba(255,215,0,0.2)", glow:"rgba(255,215,0,0.3)", periodDay:"#FFD700", predictDay:"#886600", fertileDay:"#4ECDC4", ovDay:"#FF6347", chatUser:"linear-gradient(135deg,#FFD700,#FFA500)", chatAI:"rgba(40,30,0,0.9)", hFont:"'Playfair Display',Georgia,serif" },
+  wine:      { name:"Dark Wine",      icon:"🍷", dark:true,  bg:"linear-gradient(160deg,#0A0005 0%,#150010 40%,#1C0015 100%)", card:"rgba(40,0,25,0.85)", cardBorder:"rgba(192,57,43,0.2)", primary:"#C0392B", primaryLight:"#E74C3C", secondary:"#96281B", text:"#FFE8E8", textSec:"#CC8888", accent:"#E74C3C", navBg:"rgba(10,0,5,0.96)", tabActive:"#C0392B", tabInactive:"#660020", shadow:"rgba(192,57,43,0.2)", glow:"rgba(192,57,43,0.3)", periodDay:"#C0392B", predictDay:"#880020", fertileDay:"#3498DB", ovDay:"#F39C12", chatUser:"linear-gradient(135deg,#C0392B,#96281B)", chatAI:"rgba(40,0,25,0.9)", hFont:"'Playfair Display',Georgia,serif" },
+  arctic:    { name:"Arctic",         icon:"❄️", dark:true,  bg:"linear-gradient(160deg,#020810 0%,#051226 40%,#082035 100%)", card:"rgba(5,20,45,0.85)", cardBorder:"rgba(125,249,255,0.15)", primary:"#7DF9FF", primaryLight:"#4FC3F7", secondary:"#4FC3F7", text:"#E8F8FF", textSec:"#88C8D8", accent:"#7DF9FF", navBg:"rgba(2,8,15,0.96)", tabActive:"#7DF9FF", tabInactive:"#305060", shadow:"rgba(125,249,255,0.15)", glow:"rgba(125,249,255,0.25)", periodDay:"#7DF9FF", predictDay:"#305060", fertileDay:"#48BB78", ovDay:"#F59E0B", chatUser:"linear-gradient(135deg,#7DF9FF,#4FC3F7)", chatAI:"rgba(5,20,45,0.9)", hFont:"'Playfair Display',Georgia,serif" },
+  ember:     { name:"Ember Glow",     icon:"🔥", dark:true,  bg:"linear-gradient(160deg,#0A0200 0%,#1A0500 40%,#200700 100%)", card:"rgba(40,10,0,0.85)", cardBorder:"rgba(255,107,0,0.2)", primary:"#FF6B00", primaryLight:"#FF8C00", secondary:"#FF3300", text:"#FFF0E0", textSec:"#CC8850", accent:"#FF8C00", navBg:"rgba(10,2,0,0.96)", tabActive:"#FF6B00", tabInactive:"#662800", shadow:"rgba(255,107,0,0.2)", glow:"rgba(255,107,0,0.3)", periodDay:"#FF3300", predictDay:"#882200", fertileDay:"#4ECDC4", ovDay:"#FFD700", chatUser:"linear-gradient(135deg,#FF6B00,#FF3300)", chatAI:"rgba(40,10,0,0.9)", hFont:"'Playfair Display',Georgia,serif" },
+  sakura:    { name:"Sakura Storm",   icon:"🌺", dark:true,  bg:"linear-gradient(160deg,#0D0006 0%,#1A000F 40%,#220015 100%)", card:"rgba(35,0,22,0.85)", cardBorder:"rgba(255,105,180,0.2)", primary:"#FF69B4", primaryLight:"#FF80C0", secondary:"#FF1493", text:"#FFE8F5", textSec:"#CC80B0", accent:"#FF1493", navBg:"rgba(10,0,6,0.96)", tabActive:"#FF69B4", tabInactive:"#660040", shadow:"rgba(255,105,180,0.2)", glow:"rgba(255,105,180,0.3)", periodDay:"#FF1493", predictDay:"#880050", fertileDay:"#4FC3F7", ovDay:"#FFD700", chatUser:"linear-gradient(135deg,#FF69B4,#FF1493)", chatAI:"rgba(35,0,22,0.9)", hFont:"'Playfair Display',Georgia,serif" },
+  dusk:      { name:"Dusk Purple",    icon:"🌆", dark:true,  bg:"linear-gradient(160deg,#080010 0%,#100025 40%,#160030 100%)", card:"rgba(20,0,40,0.85)", cardBorder:"rgba(155,89,182,0.2)", primary:"#9B59B6", primaryLight:"#BB70D0", secondary:"#6C3483", text:"#F0E8FF", textSec:"#A880C0", accent:"#BB70D0", navBg:"rgba(8,0,15,0.96)", tabActive:"#9B59B6", tabInactive:"#502060", shadow:"rgba(155,89,182,0.2)", glow:"rgba(155,89,182,0.3)", periodDay:"#9B59B6", predictDay:"#602080", fertileDay:"#3498DB", ovDay:"#F39C12", chatUser:"linear-gradient(135deg,#9B59B6,#6C3483)", chatAI:"rgba(20,0,40,0.9)", hFont:"'Playfair Display',Georgia,serif" },
+  hotpink:   { name:"Hot Pink",      icon:"💗", dark:true,  bg:"linear-gradient(160deg,#0F0008 0%,#1F0012 40%,#280018 100%)", card:"rgba(40,0,25,0.85)", cardBorder:"rgba(255,0,144,0.2)", primary:"#FF0090", primaryLight:"#FF40A8", secondary:"#FF69B4", text:"#FFE0F5", textSec:"#CC70A8", accent:"#FF69B4", navBg:"rgba(10,0,8,0.96)", tabActive:"#FF0090", tabInactive:"#660040", shadow:"rgba(255,0,144,0.2)", glow:"rgba(255,0,144,0.3)", periodDay:"#FF0090", predictDay:"#880050", fertileDay:"#7DF9FF", ovDay:"#FFD700", chatUser:"linear-gradient(135deg,#FF0090,#FF69B4)", chatAI:"rgba(40,0,25,0.9)", hFont:"'Nunito',sans-serif" },
+  blush:     { name:"Baby Blush",    icon:"🎀", dark:false, bg:"linear-gradient(160deg,#FFF0F8 0%,#FFE0F0 40%,#FFD5E8 100%)", card:"rgba(255,255,255,0.85)", cardBorder:"rgba(255,182,193,0.3)", primary:"#FFB6C1", primaryLight:"#FFC8D0", secondary:"#FFA0B0", text:"#4A1A2A", textSec:"#9B6878", accent:"#FF80A0", navBg:"rgba(255,248,252,0.95)", tabActive:"#FFA0B0", tabInactive:"#CCA8B8", shadow:"rgba(255,182,193,0.15)", glow:"rgba(255,182,193,0.3)", periodDay:"#FF8099", predictDay:"#FFB6C1", fertileDay:"#87CEEB", ovDay:"#FF6347", chatUser:"linear-gradient(135deg,#FFB6C1,#FFA0B0)", chatAI:"rgba(255,255,255,0.9)", hFont:"'Playfair Display',Georgia,serif" },
+  thunder:   { name:"Thunder",       icon:"⚡", dark:true,  bg:"linear-gradient(160deg,#050510 0%,#0A0A26 40%,#0F0F35 100%)", card:"rgba(10,10,40,0.85)", cardBorder:"rgba(125,249,255,0.15)", primary:"#7DF9FF", primaryLight:"#4FC3F7", secondary:"#4FC3F7", text:"#E8F0FF", textSec:"#8898C8", accent:"#FFD700", navBg:"rgba(5,5,15,0.96)", tabActive:"#7DF9FF", tabInactive:"#304060", shadow:"rgba(125,249,255,0.15)", glow:"rgba(125,249,255,0.25)", periodDay:"#FFD700", predictDay:"#305060", fertileDay:"#4FC3F7", ovDay:"#FF6347", chatUser:"linear-gradient(135deg,#7DF9FF,#FFD700)", chatAI:"rgba(10,10,40,0.9)", hFont:"'Nunito',sans-serif" },
+  peach:     { name:"Peach Dream",   icon:"🍑", dark:false, bg:"linear-gradient(160deg,#FFF5EE 0%,#FFE8D8 40%,#FFD8C0 100%)", card:"rgba(255,255,255,0.85)", cardBorder:"rgba(255,160,120,0.2)", primary:"#FF9E80", primaryLight:"#FFB898", secondary:"#FF6D59", text:"#4A2010", textSec:"#9B6848", accent:"#FF6D59", navBg:"rgba(255,250,245,0.95)", tabActive:"#FF6D59", tabInactive:"#C4A088", shadow:"rgba(255,158,128,0.15)", glow:"rgba(255,158,128,0.25)", periodDay:"#FF6D59", predictDay:"#FFB898", fertileDay:"#48BB78", ovDay:"#9B59B6", chatUser:"linear-gradient(135deg,#FF9E80,#FF6D59)", chatAI:"rgba(255,255,255,0.9)", hFont:"'Playfair Display',Georgia,serif" },
+  sapphire:  { name:"Sapphire",      icon:"💎", dark:true,  bg:"linear-gradient(160deg,#000510 0%,#00083A 40%,#000D52 100%)", card:"rgba(0,10,50,0.85)", cardBorder:"rgba(41,121,255,0.2)", primary:"#2979FF", primaryLight:"#448AFF", secondary:"#448AFF", text:"#E8F0FF", textSec:"#8090C8", accent:"#448AFF", navBg:"rgba(0,5,15,0.96)", tabActive:"#2979FF", tabInactive:"#204080", shadow:"rgba(41,121,255,0.2)", glow:"rgba(41,121,255,0.3)", periodDay:"#2979FF", predictDay:"#204080", fertileDay:"#48BB78", ovDay:"#FF6347", chatUser:"linear-gradient(135deg,#2979FF,#448AFF)", chatAI:"rgba(0,10,50,0.9)", hFont:"'Playfair Display',Georgia,serif" },
+  coral:     { name:"Coral Reef",    icon:"🪸", dark:false, bg:"linear-gradient(160deg,#FFF0EE 0%,#FFE0DA 40%,#FFD0C8 100%)", card:"rgba(255,255,255,0.85)", cardBorder:"rgba(255,111,97,0.2)", primary:"#FF6F61", primaryLight:"#FF9A8B", secondary:"#E8504A", text:"#4A1A18", textSec:"#9B6860", accent:"#FF9A8B", navBg:"rgba(255,248,248,0.95)", tabActive:"#E8504A", tabInactive:"#C4A0A0", shadow:"rgba(255,111,97,0.15)", glow:"rgba(255,111,97,0.25)", periodDay:"#E8504A", predictDay:"#FF9A8B", fertileDay:"#4ECDC4", ovDay:"#FFD700", chatUser:"linear-gradient(135deg,#FF6F61,#E8504A)", chatAI:"rgba(255,255,255,0.9)", hFont:"'Playfair Display',Georgia,serif" },
+  mint:      { name:"Mint Fresh",    icon:"🌿", dark:false, bg:"linear-gradient(160deg,#F0FFF8 0%,#E0FFF0 40%,#D0FFE8 100%)", card:"rgba(255,255,255,0.85)", cardBorder:"rgba(48,209,88,0.2)", primary:"#30D158", primaryLight:"#60E880", secondary:"#34C759", text:"#0A2A15", textSec:"#407858", accent:"#34C759", navBg:"rgba(245,255,248,0.95)", tabActive:"#30D158", tabInactive:"#90C8A0", shadow:"rgba(48,209,88,0.15)", glow:"rgba(48,209,88,0.25)", periodDay:"#30D158", predictDay:"#90D8A0", fertileDay:"#3B9FE3", ovDay:"#FF6347", chatUser:"linear-gradient(135deg,#30D158,#34C759)", chatAI:"rgba(255,255,255,0.9)", hFont:"'Playfair Display',Georgia,serif" },
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const dk = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const pd = (s) => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); };
+const dBetween = (a, b) => Math.round((b - a) / 86400000);
+const addD = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+const sameD = (a, b) => a && b && a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+
+function useLS(key, def) {
+  const [v, setV] = useState(() => {
+    try { const s = localStorage.getItem(`gc_${key}`); return s ? JSON.parse(s) : def; }
+    catch { return def; }
+  });
+  useEffect(() => { try { localStorage.setItem(`gc_${key}`, JSON.stringify(v)); } catch {} }, [key, v]);
+  return [v, setV];
+}
+
+function predict(logs) {
+  const starts = [];
+  const sorted = Object.keys(logs).filter(k => logs[k]?.flow && !['none','discharge'].includes(logs[k].flow)).sort();
+  if (!sorted.length) return { next: null, fertile: null, ovDay: null, avg: 28, cycles: [], last: null };
+  let cur = sorted[0], prev = sorted[0];
+  for (let i = 1; i < sorted.length; i++) {
+    if (dBetween(pd(prev), pd(sorted[i])) > 3) { starts.push(cur); cur = sorted[i]; }
+    prev = sorted[i];
+  }
+  starts.push(cur);
+  const cycles = [];
+  for (let i = 1; i < starts.length; i++) cycles.push(dBetween(pd(starts[i-1]), pd(starts[i])));
+  let avg = 28;
+  if (cycles.length) {
+    const w = cycles.map((_,i) => i+1), ws = w.reduce((a,b)=>a+b,0);
+    avg = Math.round(cycles.reduce((s,c,i)=>s+c*w[i],0)/ws);
+  }
+  const last = pd(starts[starts.length-1]);
+  const next = addD(last, avg);
+  const ov = addD(next, -14);
+  return { next, fertile: { start: addD(ov,-5), end: addD(ov,1) }, ovDay: ov, avg, cycles, last };
+}
+
+// ─── Gemini API key guide ─────────────────────────────────────────────────────
+function ApiKeyGuide({ T, onSave }) {
+  const [key, setKey] = useState('');
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{background:T.card,borderRadius:22,padding:22,border:`1px solid ${T.cardBorder}`,
+        backdropFilter:'blur(20px)',boxShadow:`0 8px 30px ${T.shadow}`}}>
+        <div style={{fontSize:28,marginBottom:10,textAlign:'center'}}>🔑</div>
+        <h3 style={{margin:'0 0 6px',fontSize:16,fontWeight:700,color:T.text,textAlign:'center',fontFamily:T.hFont}}>Connect Wyar AI</h3>
+        <p style={{margin:'0 0 18px',fontSize:12,color:T.textSec,textAlign:'center',lineHeight:1.6}}>Free API key — no credit card needed</p>
+
+        <div style={{background:`${T.primary}10`,borderRadius:16,padding:16,marginBottom:16,border:`1px solid ${T.primary}25`}}>
+          <div style={{fontSize:12,fontWeight:800,color:T.primary,marginBottom:12,textTransform:'uppercase',letterSpacing:'0.5px'}}>
+            📋 3 Steps to get your key
+          </div>
+          {[
+            { n:'1', text: <>Open in browser: <span style={{color:T.primary,fontWeight:700}}>aistudio.google.com/apikey</span></> },
+            { n:'2', text: <>Sign in with Google → tap <strong style={{color:T.text}}>"Create API key"</strong></> },
+            { n:'3', text: <>Copy the key (starts with <code style={{background:`${T.primary}20`,padding:'1px 5px',borderRadius:4,fontSize:11,color:T.primary}}>AIza...</code>) and paste below</> },
+          ].map(s => (
+            <div key={s.n} style={{display:'flex',gap:10,marginBottom:10,alignItems:'flex-start'}}>
+              <div style={{minWidth:22,height:22,borderRadius:'50%',background:T.primary,color:'#fff',
+                display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,flexShrink:0}}>
+                {s.n}
+              </div>
+              <div style={{fontSize:12,color:T.textSec,lineHeight:1.6,paddingTop:2}}>{s.text}</div>
+            </div>
+          ))}
+          <div style={{fontSize:11,color:T.textSec,opacity:0.7,marginTop:4}}>✅ Free forever · No credit card · Works in 2 minutes</div>
+        </div>
+
+        <input
+          type="password"
+          value={key}
+          onChange={e => setKey(e.target.value)}
+          placeholder="Paste your key here... (AIza...)"
+          style={{width:'100%',padding:'13px 16px',borderRadius:14,border:`1.5px solid ${T.cardBorder}`,
+            background:`${T.textSec}08`,color:T.text,fontSize:13,outline:'none',marginBottom:10}}
+        />
+        <button onClick={() => { if(key.trim()) onSave(key.trim()); }}
+          disabled={!key.trim()}
+          style={{width:'100%',padding:'14px',borderRadius:14,border:'none',cursor:key.trim()?'pointer':'default',
+            background:key.trim()?`linear-gradient(135deg,${T.primary},${T.secondary})`:`${T.textSec}20`,
+            color:key.trim()?'#fff':T.textSec,fontSize:14,fontWeight:700,
+            boxShadow:key.trim()?`0 6px 20px ${T.shadow}`:'none',transition:'all 0.2s'}}>
+          Activate Wyar 🌸
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Notes Keeper ─────────────────────────────────────────────────────────────
+function NotesTab({ T, showToast }) {
+  const [notes, setNotes] = useLS('keeper_notes', []);
+  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState({ title:'', body:'', color:'default' });
+  const [search, setSearch] = useState('');
+  const NOTE_COLORS = [
+    { id:'default', hex: null },
+    { id:'pink',    hex: '#FFE4F0' },
+    { id:'purple',  hex: '#F0E8FF' },
+    { id:'blue',    hex: '#E8F4FF' },
+    { id:'green',   hex: '#E8F8EE' },
+    { id:'yellow',  hex: '#FFFDE8' },
+    { id:'orange',  hex: '#FFF0E0' },
+  ];
+  const saveNote = () => {
+    if (!draft.body.trim() && !draft.title.trim()) return;
+    if (editing === 'new') {
+      const n = { id: Date.now().toString(), ...draft, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      setNotes(p => [n, ...p]);
+    } else {
+      setNotes(p => p.map(n => n.id===editing ? {...n,...draft,updatedAt:new Date().toISOString()} : n));
+    }
+    setEditing(null); setDraft({ title:'', body:'', color:'default' });
+    showToast('Note saved 📝');
+  };
+  const deleteNote = (id) => {
+    if (window.confirm('Delete this note?')) { setNotes(p=>p.filter(n=>n.id!==id)); showToast('Deleted'); }
+  };
+  const openEdit = (note) => { setDraft({ title:note.title, body:note.body, color:note.color||'default' }); setEditing(note.id); };
+  const fmt = (iso) => { const d=new Date(iso); return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); };
+  const filtered = notes.filter(n=>(n.title+n.body).toLowerCase().includes(search.toLowerCase()));
+
+  if (editing !== null) {
+    const colorBg = NOTE_COLORS.find(c=>c.id===draft.color)?.hex || T.card;
+    return (
+      <div style={{display:'flex',flexDirection:'column',gap:12}}>
+        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
+          <button onClick={()=>{setEditing(null);setDraft({title:'',body:'',color:'default'});}}
+            style={{background:T.card,border:`1px solid ${T.cardBorder}`,borderRadius:10,padding:'7px 12px',
+              cursor:'pointer',fontSize:13,color:T.text,fontWeight:600}}>← Back</button>
+          <span style={{fontSize:13,color:T.textSec,flex:1}}>{editing==='new'?'New Note':'Edit Note'}</span>
+          <button onClick={saveNote}
+            style={{background:`linear-gradient(135deg,${T.primary},${T.secondary})`,border:'none',borderRadius:10,
+              padding:'7px 16px',cursor:'pointer',fontSize:13,color:'#fff',fontWeight:700,
+              boxShadow:`0 3px 12px ${T.shadow}`}}>Save</button>
+        </div>
+        <div style={{display:'flex',gap:7,alignItems:'center'}}>
+          <span style={{fontSize:11,color:T.textSec,fontWeight:600}}>Color:</span>
+          {NOTE_COLORS.map(c=>(
+            <div key={c.id} onClick={()=>setDraft(p=>({...p,color:c.id}))}
+              style={{width:22,height:22,borderRadius:'50%',cursor:'pointer',flexShrink:0,
+                background:c.hex||T.card,
+                border:draft.color===c.id?`2.5px solid ${T.primary}`:`1.5px solid ${T.cardBorder}`,
+                boxShadow:draft.color===c.id?`0 0 0 2px ${T.primary}44`:'none'}}/>
+          ))}
+        </div>
+        <div style={{background:colorBg,borderRadius:18,padding:18,border:`1px solid ${T.cardBorder}`,
+          backdropFilter:'blur(20px)',display:'flex',flexDirection:'column',gap:10}}>
+          <input value={draft.title} onChange={e=>setDraft(p=>({...p,title:e.target.value}))}
+            placeholder="Title (optional)..."
+            style={{background:'transparent',border:'none',outline:'none',fontSize:16,fontWeight:700,
+              color:T.text,width:'100%',fontFamily:T.hFont}}/>
+          <div style={{height:'1px',background:T.cardBorder}}/>
+          <textarea value={draft.body} onChange={e=>setDraft(p=>({...p,body:e.target.value}))}
+            placeholder="Write anything..."
+            style={{background:'transparent',border:'none',outline:'none',fontSize:14,color:T.text,
+              width:'100%',minHeight:240,resize:'none',lineHeight:1.7,fontFamily:'inherit'}}
+            autoFocus/>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{display:'flex',gap:10,alignItems:'center'}}>
+        <div style={{flex:1,background:T.card,borderRadius:14,padding:'10px 14px',
+          border:`1px solid ${T.cardBorder}`,display:'flex',alignItems:'center',gap:8}}>
+          <span style={{fontSize:14,opacity:0.5}}>🔍</span>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search notes..."
+            style={{background:'none',border:'none',outline:'none',fontSize:13,color:T.text,flex:1}}/>
+        </div>
+        <button onClick={()=>{setDraft({title:'',body:'',color:'default'});setEditing('new');}}
+          style={{background:`linear-gradient(135deg,${T.primary},${T.secondary})`,border:'none',borderRadius:14,
+            padding:'10px 16px',cursor:'pointer',fontSize:13,color:'#fff',fontWeight:700,whiteSpace:'nowrap',
+            boxShadow:`0 4px 14px ${T.shadow}`}}>+ New</button>
+      </div>
+
+      {filtered.length===0&&(
+        <div style={{textAlign:'center',padding:'48px 16px',color:T.textSec}}>
+          <div style={{fontSize:48,marginBottom:12}}>📝</div>
+          <div style={{fontSize:14,fontWeight:600}}>{notes.length===0?'No notes yet':'Nothing found'}</div>
+          <div style={{fontSize:12,marginTop:6,opacity:0.7}}>Tap + New to write your first note</div>
+        </div>
+      )}
+
+      <div style={{columns:2,columnGap:10}}>
+        {filtered.map(note=>{
+          const colorBg=NOTE_COLORS.find(c=>c.id===note.color)?.hex;
+          return (
+            <div key={note.id} onClick={()=>openEdit(note)}
+              style={{background:colorBg||T.card,borderRadius:16,padding:14,
+                border:`1px solid ${T.cardBorder}`,marginBottom:10,cursor:'pointer',
+                breakInside:'avoid',display:'block',boxShadow:`0 2px 10px ${T.shadow}`}}>
+              {note.title&&<div style={{fontSize:13,fontWeight:700,color:T.text,marginBottom:5,
+                fontFamily:T.hFont,lineHeight:1.3}}>{note.title}</div>}
+              <div style={{fontSize:12,color:T.textSec,lineHeight:1.6,overflow:'hidden',
+                display:'-webkit-box',WebkitLineClamp:6,WebkitBoxOrient:'vertical'}}>
+                {note.body}
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8}}>
+                <div style={{fontSize:9,color:T.textSec,opacity:0.55}}>{fmt(note.updatedAt)}</div>
+                <div onClick={e=>{e.stopPropagation();deleteNote(note.id);}}
+                  style={{fontSize:12,color:'#FF6B6B',opacity:0.7,padding:'2px 6px',cursor:'pointer'}}>🗑</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Photo Vault ──────────────────────────────────────────────────────────────
+function VaultTab({ T, showToast }) {
+  const [vaultHash, setVaultHash] = useLS('vault_hash', null);
+  const [photos, setPhotos] = useLS('vault_photos', []);
+  const [unlocked, setUnlocked] = useState(false);
+  const [pwInput, setPwInput] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [viewPhoto, setViewPhoto] = useState(null);
+  const fileRef = useRef(null);
+
+  const hashPw = async (pw) => {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw+'gullalay_vault_2024'));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  };
+
+  const tryUnlock = async () => {
+    const h = await hashPw(pwInput);
+    if (h===vaultHash) { setUnlocked(true); setPwInput(''); }
+    else { showToast('Wrong password ❌'); setPwInput(''); }
+  };
+
+  const createVault = async () => {
+    if (pwInput.length<4) { showToast('At least 4 characters needed'); return; }
+    if (pwInput!==pwConfirm) { showToast("Passwords don't match ❌"); return; }
+    const h = await hashPw(pwInput);
+    setVaultHash(h); setUnlocked(true); setPwInput(''); setPwConfirm('');
+    showToast('Vault created! 🔐');
+  };
+
+  const addPhoto = (e) => {
+    const files=Array.from(e.target.files);
+    files.forEach(file=>{
+      const reader=new FileReader();
+      reader.onload=(ev)=>{
+        const p={id:Date.now().toString()+Math.random(),src:ev.target.result,
+          name:file.name,addedAt:new Date().toISOString(),caption:''};
+        setPhotos(prev=>[p,...prev]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value='';
+    showToast('Photo added! 🔐');
+  };
+
+  const deletePhoto = (id) => {
+    if (window.confirm('Delete this photo from vault?')) {
+      setPhotos(p=>p.filter(ph=>ph.id!==id)); setViewPhoto(null); showToast('Deleted');
+    }
+  };
+
+  const updateCaption = (id,cap) => setPhotos(p=>p.map(ph=>ph.id===id?{...ph,caption:cap}:ph));
+
+  if (viewPhoto) {
+    const ph=photos.find(p=>p.id===viewPhoto);
+    if (!ph) { setViewPhoto(null); return null; }
+    return (
+      <div style={{position:'fixed',inset:0,zIndex:500,background:'rgba(0,0,0,0.97)',
+        display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:16}}>
+        <div style={{position:'absolute',top:'calc(env(safe-area-inset-top,12px) + 10px)',left:16,right:16,
+          display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <button onClick={()=>setViewPhoto(null)}
+            style={{background:'rgba(255,255,255,0.12)',border:'none',borderRadius:10,padding:'8px 14px',
+              color:'#fff',fontSize:14,cursor:'pointer',fontWeight:600}}>← Back</button>
+          <button onClick={()=>deletePhoto(ph.id)}
+            style={{background:'rgba(255,80,80,0.25)',border:'none',borderRadius:10,padding:'8px 14px',
+              color:'#ff8080',fontSize:14,cursor:'pointer',fontWeight:600}}>🗑 Delete</button>
+        </div>
+        <img src={ph.src} style={{maxWidth:'100%',maxHeight:'62vh',objectFit:'contain',borderRadius:14}}/>
+        <div style={{padding:'16px 0',width:'100%',maxWidth:400}}>
+          <input value={ph.caption||''} onChange={e=>updateCaption(ph.id,e.target.value)}
+            placeholder="Add a caption..."
+            style={{width:'100%',background:'rgba(255,255,255,0.08)',border:'1px solid rgba(255,255,255,0.15)',
+              borderRadius:12,padding:'11px 14px',color:'#fff',fontSize:13,outline:'none'}}/>
+          <div style={{fontSize:10,color:'rgba(255,255,255,0.35)',marginTop:8,textAlign:'center'}}>
+            Added {new Date(ph.addedAt).toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'})}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!vaultHash) return (
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{background:T.card,borderRadius:22,padding:28,border:`1px solid ${T.cardBorder}`,
+        backdropFilter:'blur(20px)',boxShadow:`0 8px 30px ${T.shadow}`,textAlign:'center'}}>
+        <div style={{fontSize:52,marginBottom:14}}>🔐</div>
+        <h3 style={{margin:'0 0 8px',fontSize:17,fontWeight:700,color:T.text,fontFamily:T.hFont}}>Create Your Vault</h3>
+        <p style={{margin:'0 0 24px',fontSize:12,color:T.textSec,lineHeight:1.7}}>
+          Your photos will be locked with a password. Only you can access them. If you forget your password, the vault cannot be recovered.
+        </p>
+        <input type="password" value={pwInput} onChange={e=>setPwInput(e.target.value)}
+          placeholder="Choose a password (min 4 chars)"
+          style={{width:'100%',padding:'13px 16px',borderRadius:14,border:`1.5px solid ${T.cardBorder}`,
+            background:`${T.textSec}08`,color:T.text,fontSize:13,outline:'none',marginBottom:10,textAlign:'center'}}/>
+        <input type="password" value={pwConfirm} onChange={e=>setPwConfirm(e.target.value)}
+          placeholder="Confirm password"
+          onKeyDown={e=>e.key==='Enter'&&createVault()}
+          style={{width:'100%',padding:'13px 16px',borderRadius:14,border:`1.5px solid ${T.cardBorder}`,
+            background:`${T.textSec}08`,color:T.text,fontSize:13,outline:'none',marginBottom:16,textAlign:'center'}}/>
+        <button onClick={createVault}
+          style={{width:'100%',padding:'14px',borderRadius:14,border:'none',cursor:'pointer',
+            background:`linear-gradient(135deg,${T.primary},${T.secondary})`,
+            color:'#fff',fontSize:15,fontWeight:700,boxShadow:`0 6px 20px ${T.shadow}`}}>
+          Create Vault 🔐
+        </button>
+      </div>
+    </div>
+  );
+
+  if (!unlocked) return (
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{background:T.card,borderRadius:22,padding:32,border:`1px solid ${T.cardBorder}`,
+        backdropFilter:'blur(20px)',boxShadow:`0 8px 30px ${T.shadow}`,textAlign:'center'}}>
+        <div style={{fontSize:64,marginBottom:16,animation:'heartbeat 2s ease-in-out infinite'}}>🔒</div>
+        <h3 style={{margin:'0 0 6px',fontSize:18,fontWeight:700,color:T.text,fontFamily:T.hFont}}>Private Vault</h3>
+        <p style={{margin:'0 0 24px',fontSize:12,color:T.textSec}}>{photos.length} photo{photos.length!==1?'s':''} locked inside</p>
+        <input type="password" value={pwInput} onChange={e=>setPwInput(e.target.value)}
+          onKeyDown={e=>e.key==='Enter'&&tryUnlock()}
+          placeholder="Enter password"
+          style={{width:'100%',padding:'14px 16px',borderRadius:14,border:`1.5px solid ${T.cardBorder}`,
+            background:`${T.textSec}08`,color:T.text,fontSize:16,outline:'none',marginBottom:14,
+            textAlign:'center',letterSpacing:'0.15em'}}/>
+        <button onClick={tryUnlock}
+          style={{width:'100%',padding:'14px',borderRadius:14,border:'none',cursor:'pointer',
+            background:`linear-gradient(135deg,${T.primary},${T.secondary})`,
+            color:'#fff',fontSize:15,fontWeight:700,boxShadow:`0 6px 20px ${T.shadow}`}}>
+          Unlock 🔓
+        </button>
+        <button onClick={()=>{if(window.confirm('This will DELETE all vault photos and reset the password. Cannot be undone!')){setVaultHash(null);setPhotos([]);showToast('Vault reset');}}}
+          style={{background:'none',border:'none',color:T.textSec,fontSize:11,cursor:'pointer',marginTop:18,textDecoration:'underline'}}>
+          Forgot password? (reset & delete all)
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <span style={{fontSize:16}}>🔓</span>
+          <span style={{fontSize:13,fontWeight:700,color:T.primary}}>Vault Unlocked</span>
+          <span style={{fontSize:11,color:T.textSec}}>({photos.length})</span>
+        </div>
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={()=>fileRef.current?.click()}
+            style={{background:`linear-gradient(135deg,${T.primary},${T.secondary})`,border:'none',borderRadius:10,
+              padding:'7px 14px',cursor:'pointer',fontSize:12,color:'#fff',fontWeight:700,
+              boxShadow:`0 3px 10px ${T.shadow}`}}>📸 Add</button>
+          <button onClick={()=>setUnlocked(false)}
+            style={{background:T.card,border:`1px solid ${T.cardBorder}`,borderRadius:10,padding:'7px 12px',
+              cursor:'pointer',fontSize:12,color:T.textSec,fontWeight:600}}>Lock 🔒</button>
+        </div>
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" multiple onChange={addPhoto} style={{display:'none'}}/>
+
+      {photos.length===0&&(
+        <div style={{background:T.card,borderRadius:22,padding:40,border:`1px solid ${T.cardBorder}`,
+          textAlign:'center',color:T.textSec}}>
+          <div style={{fontSize:52,marginBottom:12}}>📷</div>
+          <div style={{fontSize:14,fontWeight:600}}>No photos yet</div>
+          <div style={{fontSize:12,marginTop:6,opacity:0.7}}>Tap "+ Add" to add photos from your gallery</div>
+        </div>
+      )}
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:6}}>
+        {photos.map(ph=>(
+          <div key={ph.id} onClick={()=>setViewPhoto(ph.id)}
+            style={{aspectRatio:'1',borderRadius:12,overflow:'hidden',cursor:'pointer',position:'relative',
+              background:T.card,border:`1px solid ${T.cardBorder}`,boxShadow:`0 2px 8px ${T.shadow}`}}>
+            <img src={ph.src} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+            {ph.caption&&(
+              <div style={{position:'absolute',bottom:0,left:0,right:0,padding:'4px 6px',
+                background:'rgba(0,0,0,0.6)',fontSize:9,color:'#fff',lineHeight:1.3,
+                overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis'}}>{ph.caption}</div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <button onClick={()=>{if(window.confirm('Change vault password? Current photos will remain.')){setUnlocked(false);setVaultHash(null);}}}
+        style={{background:'none',border:`1px dashed ${T.cardBorder}`,borderRadius:12,padding:'10px',
+          cursor:'pointer',fontSize:12,color:T.textSec,fontWeight:600}}>
+        🔑 Change password
+      </button>
+    </div>
+  );
+}
+
+// ─── Splash Screen ────────────────────────────────────────────────────────────
+function Splash({ T, onClose }) {
+  const poem = useMemo(() => PASHTO_POETRY[Math.floor(Math.random() * PASHTO_POETRY.length)], []);
+  return (
+    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:9999,
+      background:T.dark ? T.bg : `linear-gradient(160deg, ${T.primary}22 0%, ${T.bg.match(/#[^,)]+/)?.[0]||'#fff'} 60%)`,
+      backdropFilter:'blur(2px)',
+      display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:36,
+      cursor:'pointer'}}>
+
+      {/* Glow bg */}
+      <div style={{position:'absolute',top:'20%',left:'50%',transform:'translateX(-50%)',
+        width:260,height:260,borderRadius:'50%',background:T.glow,filter:'blur(70px)',pointerEvents:'none'}}/>
+
+      <div className="splash-anim" style={{display:'flex',flexDirection:'column',alignItems:'center',
+        maxWidth:340,width:'100%',position:'relative',zIndex:1}}>
+
+        {/* Flower */}
+        <div style={{fontSize:70,marginBottom:22,animation:'flowerSpin 3s ease-in-out infinite',
+          filter:`drop-shadow(0 0 20px ${T.primary}88)`}}>🌸</div>
+
+        {/* Pashto line */}
+        <div style={{fontSize:15,fontWeight:700,color:T.primary,textAlign:'center',lineHeight:1.7,
+          marginBottom:10,fontStyle:'italic',fontFamily:T.hFont,
+          textShadow:`0 0 30px ${T.primary}66`}}>
+          ❝ {poem.ps} ❞
+        </div>
+
+        {/* Translation */}
+        <div style={{fontSize:12,color:T.text,textAlign:'center',lineHeight:1.7,
+          marginBottom:6,opacity:T.dark?0.8:0.7}}>
+          {poem.en}
+        </div>
+
+        {/* Poet */}
+        {poem.poet && (
+          <div style={{fontSize:11,color:T.primary,fontWeight:700,opacity:0.7,marginBottom:24}}>
+            — {poem.poet}
+          </div>
+        )}
+        {!poem.poet && <div style={{marginBottom:24}}/>}
+
+        {/* From Afaq */}
+        <div style={{fontSize:14,fontWeight:700,color:T.text,opacity:T.dark?0.9:0.8,
+          letterSpacing:'0.5px',marginBottom:28}}>
+          — with love, Afaq 💙
+        </div>
+
+        {/* Tap hint */}
+        <div style={{fontSize:11,color:T.textSec,animation:'blink 2s ease-in-out infinite'}}>
+          tap anywhere to continue
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Love Card (home) ─────────────────────────────────────────────────────────
+function LoveCard({ T, mood }) {
+  const [msg, setMsg] = useState(() => randLove(mood));
+  return (
+    <div style={{borderRadius:20,padding:20,marginBottom:0,position:'relative',overflow:'hidden',
+      background:`linear-gradient(135deg,${T.primary},${T.secondary})`,
+      boxShadow:`0 8px 32px ${T.shadow}`}}>
+      <div style={{position:'absolute',top:-40,right:-40,width:120,height:120,borderRadius:'50%',
+        background:'rgba(255,255,255,0.08)'}}/>
+      <div style={{position:'absolute',bottom:-30,left:-20,width:90,height:90,borderRadius:'50%',
+        background:'rgba(255,255,255,0.06)'}}/>
+      <button onClick={() => setMsg(randLove(mood))}
+        style={{position:'absolute',top:12,right:12,background:'rgba(255,255,255,0.2)',border:'none',
+          borderRadius:'50%',width:28,height:28,color:'#fff',fontSize:13,cursor:'pointer',
+          display:'flex',alignItems:'center',justifyContent:'center'}}>🔄</button>
+      <div style={{fontSize:11,fontWeight:800,color:'rgba(255,255,255,0.7)',textTransform:'uppercase',
+        letterSpacing:'1px',marginBottom:8}}>💌 A message for you</div>
+      <div style={{fontSize:14,fontWeight:600,color:'#fff',lineHeight:1.6,position:'relative',zIndex:1}}>
+        {msg}
+      </div>
+      <div style={{fontSize:11,color:'rgba(255,255,255,0.65)',marginTop:8,fontWeight:600}}>
+        — Afaq 💙
+      </div>
+    </div>
+  );
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function useToast() {
+  const [toast, setToast] = useState(null);
+  const show = useCallback((msg, isLove=false) => {
+    setToast({ msg, isLove });
+    setTimeout(() => setToast(null), 3800);
+  }, []);
+  return [toast, show];
+}
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
+function App() {
+  const [tab, setTab] = useState('home');
+  const [themeKey, setThemeKey] = useLS('theme', 'blossom');
+  const [pLogs, setPLogs] = useLS('pLogs', {});
+  const [mLogs, setMLogs] = useLS('mLogs', {});
+  const [sLogs, setSLogs] = useLS('sLogs', {});
+  const [notesLS, setNotesLS] = useLS('notes', {});
+  const [msgs, setMsgs] = useLS('chat', []);
+  const [geminiKey, setGeminiKey] = useLS('geminiKey', '');
+  const [setup, setSetup] = useLS('setup', false);
+
+  const [selDate, setSelDate] = useState(new Date());
+  const [calM, setCalM] = useState(new Date().getMonth());
+  const [calY, setCalY] = useState(new Date().getFullYear());
+  const [logOpen, setLogOpen] = useState(false);
+  const [chatIn, setChatIn] = useState('');
+  const [chatLoad, setChatLoad] = useState(false);
+  const [themePick, setThemePick] = useState(false);
+  const [showOnb, setShowOnb] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+  const [toast, showToast] = useToast();
+  const chatRef = useRef(null);
+
+  const T = THEMES[themeKey] || THEMES.blossom;
+  const pred = useMemo(() => predict(pLogs), [pLogs]);
+  const today = dk(new Date());
+  const selK = dk(selDate);
+  const daysLeft = pred.next ? dBetween(new Date(), pred.next) : null;
+  const todayMood = mLogs[today]?.[0] || '';
+
+  useEffect(() => { if (!setup) setShowOnb(true); }, []);
+  useEffect(() => { chatRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs, chatLoad]);
+
+  const getStatus = useCallback((date) => {
+    const k = dk(date);
+    const flow = pLogs[k]?.flow;
+    if (flow && !['none','discharge'].includes(flow)) return 'period';
+    if (pred.next) { for (let i=0;i<6;i++) if (sameD(date, addD(pred.next,i))) return 'predicted'; }
+    if (pred.fertile && date >= pred.fertile.start && date <= pred.fertile.end) return 'fertile';
+    if (pred.ovDay && sameD(date, pred.ovDay)) return 'ovulation';
+    return null;
+  }, [pLogs, pred]);
+
+  const logFlow = (lv) => setPLogs(p => ({...p, [selK]: { ...p[selK], flow: p[selK]?.flow===lv ? null : lv }}));
+  const logMood = (m) => setMLogs(p => { const c=p[selK]||[]; return {...p,[selK]:c.includes(m)?c.filter(x=>x!==m):[...c,m]}; });
+  const logSym = (s) => setSLogs(p => { const c=p[selK]||[]; return {...p,[selK]:c.includes(s)?c.filter(x=>x!==s):[...c,s]}; });
+
+  const saveLog = () => {
+    showToast(randSaveMsg(), true);
+  };
+
+  // ── Gemini Chat ──
+  const sendChat = async () => {
+    if (!chatIn.trim() || chatLoad) return;
+    if (!geminiKey) { showToast('Add your Gemini API key first! 🔑'); return; }
+    const msg = chatIn.trim(); setChatIn('');
+    const newMsgs = [...msgs, { role:'user', content: msg }];
+    setMsgs(newMsgs); setChatLoad(true);
+
+    const sortedP = Object.keys(pLogs).filter(k=>pLogs[k]?.flow&&!['none','discharge'].includes(pLogs[k].flow)).sort();
+    const recentM = Object.entries(mLogs).slice(-7).map(([d,m])=>`${d}:${m.join(',')}`).join('; ');
+    const recentS = Object.entries(sLogs).slice(-7).map(([d,s])=>`${d}:${s.join(',')}`).join('; ');
+
+    const sysPrompt = `You are Wyar — a warm, caring period health companion for Gullalay Khan. You're like her knowledgeable best friend who deeply understands women's health, periods, and emotional wellbeing.
+
+Gullalay's data:
+- Irregular cycles. Pattern: 1-2 days light discharge before heavier bleeding
+- Avg cycle: ${pred.avg} days (${pred.cycles.length} tracked cycles)
+- Last period: ${pred.last ? dk(pred.last) : 'Unknown'}
+- Next predicted: ${pred.next ? dk(pred.next) : 'Unknown'} (${daysLeft ?? '?'} days away)
+- Recent periods: ${sortedP.slice(-8).join(', ')||'None logged'}
+- Recent moods: ${recentM||'None'}
+- Recent symptoms: ${recentS||'None'}
+- Today: ${today}
+
+Personality: Warm, loving, encouraging. NEVER judge. Speak like a trusted best friend. Use occasional Pashto endearments like "Gul Jaane" or "Lalay". Keep responses concise but warm. End with something encouraging. Use emojis naturally. For serious symptoms, gently suggest seeing a doctor.`;
+
+    const geminiMessages = [];
+    for (const m of newMsgs.slice(-20)) {
+      geminiMessages.push({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] });
+    }
+
+    try {
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: sysPrompt }] },
+            contents: geminiMessages,
+            generationConfig: { temperature: 0.9, maxOutputTokens: 500 }
+          })
+        }
+      );
+      const data = await resp.json();
+      if (data.error) {
+        const errMsg = data.error.message || 'Unknown error';
+        setMsgs(p=>[...p,{role:'assistant',content:`Couldn't connect: ${errMsg} 💙`}]);
+      } else {
+        const txt = data.candidates?.[0]?.content?.parts?.map(p=>p.text||'').join('') || "I'm having trouble. Try again! 💕";
+        setMsgs(p=>[...p,{role:'assistant',content:txt}]);
+      }
+    } catch(e) {
+      setMsgs(p=>[...p,{role:'assistant',content:`Connection error. Check your internet and try again! 🌸`}]);
+    }
+    setChatLoad(false);
+  };
+
+  // ── Calendar ──
+  const calCells = useMemo(() => {
+    const first = new Date(calY, calM, 1).getDay();
+    const dim = new Date(calY, calM+1, 0).getDate();
+    const t = new Date();
+    const cells = [];
+    for (let i=0; i<first; i++) cells.push(<div key={`e${i}`} style={{width:40,height:40}} />);
+    for (let d=1; d<=dim; d++) {
+      const date = new Date(calY, calM, d);
+      const k = dk(date);
+      const st = getStatus(date);
+      const isT = sameD(date,t), isSel = sameD(date,selDate);
+      const hasM = mLogs[k]?.length>0, hasS = sLogs[k]?.length>0;
+      let bg='transparent', tc=T.text;
+      if(st==='period'){bg=T.periodDay;tc='#FFF';}
+      else if(st==='predicted'){bg=T.predictDay+'88';tc=T.text;}
+      else if(st==='fertile'){bg=T.fertileDay+'66';tc=T.dark?'#fff':T.text;}
+      else if(st==='ovulation'){bg=T.ovDay;tc='#FFF';}
+      cells.push(
+        <div key={d} onClick={()=>{setSelDate(date);setLogOpen(true);setTab('calendar');}}
+          style={{width:40,height:40,borderRadius:12,display:'flex',flexDirection:'column',
+            alignItems:'center',justifyContent:'center',cursor:'pointer',position:'relative',
+            background:bg,color:tc,fontSize:13,fontWeight:isT?800:500,
+            border:isSel?`2px solid ${T.secondary}`:isT?`2px solid ${T.primary}`:`2px solid transparent`,
+            transition:'all 0.15s'}}>
+          {d}
+          {(hasM||hasS)&&<div style={{position:'absolute',bottom:2,display:'flex',gap:2}}>
+            {hasM&&<div style={{width:4,height:4,borderRadius:2,background:'#FFD93D'}}/>}
+            {hasS&&<div style={{width:4,height:4,borderRadius:2,background:T.accent}}/>}
+          </div>}
+        </div>
+      );
+    }
+    return cells;
+  }, [calY, calM, pLogs, mLogs, sLogs, selDate, T, getStatus]);
+
+  // ── Onboarding ──
+  if (showOnb) return (
+    <div style={{width:'100%',height:'100vh',background:T.bg,display:'flex',flexDirection:'column',
+      alignItems:'center',justifyContent:'center',padding:24,overflowY:'auto'}}>
+      <div className="scale-in" style={{background:T.card,borderRadius:28,padding:'40px 26px',maxWidth:380,
+        width:'100%',textAlign:'center',backdropFilter:'blur(20px)',
+        border:`1px solid ${T.cardBorder}`,boxShadow:`0 24px 64px ${T.shadow}`}}>
+        <div style={{fontSize:56,marginBottom:12,animation:'heartbeat 2s ease-in-out infinite'}}>🌸</div>
+        <h1 style={{color:T.text,fontSize:26,fontWeight:700,margin:'0 0 4px',fontFamily:T.hFont}}>Gullalay's</h1>
+        <h2 style={{color:T.primary,fontSize:17,fontWeight:600,margin:'0 0 12px'}}>Companion 💕</h2>
+        <p style={{color:T.textSec,fontSize:13,lineHeight:1.7,margin:'0 0 24px'}}>
+          Track your cycle, log your moods, and chat with your AI health companion. Made with love, just for you.
+        </p>
+        <p style={{color:T.text,fontSize:12,fontWeight:700,margin:'0 0 12px'}}>Pick your theme:</p>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginBottom:24}}>
+          {Object.entries(THEMES).map(([k,t])=>(
+            <div key={k} onClick={()=>setThemeKey(k)}
+              style={{padding:'10px 6px',borderRadius:12,cursor:'pointer',fontSize:11,fontWeight:600,
+                background:themeKey===k?T.primary:`${T.textSec}12`,
+                color:themeKey===k?'#FFF':T.text,
+                border:`1.5px solid ${themeKey===k?T.primary:T.cardBorder}`,
+                transition:'all 0.2s',textAlign:'center'}}>
+              <div style={{fontSize:18}}>{t.icon}</div>
+              <div style={{marginTop:2,fontSize:9}}>{t.name.split(' ')[0]}</div>
+            </div>
+          ))}
+        </div>
+        <button onClick={()=>{setSetup(true);setShowOnb(false);}}
+          style={{width:'100%',padding:'15px',borderRadius:16,border:'none',cursor:'pointer',
+            background:`linear-gradient(135deg,${T.primary},${T.secondary})`,
+            color:'#FFF',fontSize:16,fontWeight:700,boxShadow:`0 8px 28px ${T.shadow}`}}>
+          Let's Begin ✨
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{width:'100%',height:'100vh',background:T.bg,display:'flex',flexDirection:'column',
+      maxWidth:430,margin:'0 auto',position:'relative',overflow:'hidden'}}>
+
+      {/* Splash */}
+      {showSplash && <Splash T={T} onClose={() => setShowSplash(false)} />}
+
+      {/* BG glow */}
+      <div style={{position:'fixed',top:-80,right:-60,width:240,height:240,borderRadius:'50%',
+        background:T.glow,filter:'blur(70px)',pointerEvents:'none',zIndex:0}}/>
+
+      {/* Header */}
+      <div style={{padding:`calc(env(safe-area-inset-top,12px) + 10px) 20px 10px`,
+        display:'flex',alignItems:'center',justifyContent:'space-between',position:'relative',zIndex:10}}>
+        <div>
+          <h1 style={{margin:0,fontSize:21,fontWeight:700,color:T.text,fontFamily:T.hFont,letterSpacing:-0.3}}>
+            {tab==='home' && `Hey, ${nick()} 🌸`}
+            {tab==='calendar' && `${MONTH_FULL[calM]} ${calY}`}
+            {tab==='chat' && 'Ask Wyar 💬'}
+            {tab==='notes' && 'Notes 📝'}
+            {tab==='vault' && 'Private Vault 🔐'}
+            {tab==='insights' && 'Your Insights 📊'}
+            {tab==='settings' && 'Settings ⚙️'}
+          </h1>
+          {tab==='home'&&<p style={{margin:'2px 0 0',fontSize:11,color:T.textSec}}>
+            {new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
+          </p>}
+        </div>
+        <div onClick={()=>setThemePick(!themePick)} style={{width:38,height:38,borderRadius:13,
+          background:T.card,border:`1px solid ${T.cardBorder}`,display:'flex',alignItems:'center',
+          justifyContent:'center',cursor:'pointer',fontSize:18,boxShadow:`0 3px 10px ${T.shadow}`}}>
+          {THEMES[themeKey].icon}
+        </div>
+      </div>
+
+      {/* Theme picker */}
+      {themePick&&<div style={{position:'absolute',top:62,right:16,zIndex:100,background:T.card,
+        borderRadius:18,padding:10,border:`1px solid ${T.cardBorder}`,
+        boxShadow:`0 16px 48px ${T.shadow}`,backdropFilter:'blur(24px)',width:200,maxHeight:320,overflowY:'auto'}}>
+        {Object.entries(THEMES).map(([k,t])=>(
+          <div key={k} onClick={()=>{setThemeKey(k);setThemePick(false);}}
+            style={{padding:'9px 12px',borderRadius:10,cursor:'pointer',display:'flex',
+              alignItems:'center',gap:8,background:themeKey===k?`${T.primary}15`:'transparent'}}>
+            <span style={{fontSize:15}}>{t.icon}</span>
+            <span style={{fontSize:12,fontWeight:themeKey===k?700:400,color:T.text}}>{t.name}</span>
+            {themeKey===k&&<span style={{marginLeft:'auto',color:T.primary,fontSize:12}}>✓</span>}
+          </div>
+        ))}
+      </div>}
+
+      {/* Content */}
+      <div style={{flex:1,overflowY:'auto',padding:'0 16px 100px',position:'relative',zIndex:5,
+        WebkitOverflowScrolling:'touch'}} onClick={()=>themePick&&setThemePick(false)}>
+
+        {/* ═══ HOME ═══ */}
+        {tab==='home'&&<div style={{display:'flex',flexDirection:'column',gap:14}}>
+
+          {/* Love message card */}
+          <div className="fade-up"><LoveCard T={T} mood={todayMood} /></div>
+
+          {/* Cycle ring */}
+          <div className="fade-up" style={{background:T.card,borderRadius:22,padding:24,
+            border:`1px solid ${T.cardBorder}`,backdropFilter:'blur(20px)',
+            boxShadow:`0 8px 30px ${T.shadow}`,textAlign:'center',animationDelay:'0.05s'}}>
+            <div style={{width:110,height:110,borderRadius:'50%',margin:'0 auto 16px',position:'relative',
+              background:`conic-gradient(${T.primary} ${daysLeft!=null?Math.max(0,(1-daysLeft/pred.avg))*360:0}deg, ${T.cardBorder} 0deg)`,
+              display:'flex',alignItems:'center',justifyContent:'center',
+              boxShadow:`0 4px 20px ${T.glow}`}}>
+              <div style={{width:90,height:90,borderRadius:'50%',background:T.card,
+                display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+                <span style={{fontSize:28,fontWeight:800,color:T.primary,fontFamily:T.hFont}}>
+                  {daysLeft!=null?(daysLeft<=0?'🩸':daysLeft):'?'}
+                </span>
+                <span style={{fontSize:9,color:T.textSec,fontWeight:600}}>
+                  {daysLeft!=null?(daysLeft<=0?'Period!':'days left'):'Log to start'}
+                </span>
+              </div>
+            </div>
+            <h2 style={{margin:'0 0 4px',fontSize:17,fontWeight:700,color:T.text,fontFamily:T.hFont}}>
+              {daysLeft==null?'Start Tracking':daysLeft<=0?'Period may have started!':daysLeft<=3?'Almost time!':'Cycle Day '+(pred.avg-daysLeft)}
+            </h2>
+            <p style={{margin:0,fontSize:12,color:T.textSec,lineHeight:1.5}}>
+              {pred.next?`Next: ~${pred.next.toLocaleDateString('en-US',{month:'short',day:'numeric'})} · Avg: ${pred.avg} days`
+                :'Log period days to get predictions'}
+            </p>
+          </div>
+
+          {/* Quick log */}
+          <div className="fade-up" onClick={()=>{setSelDate(new Date());setLogOpen(true);setTab('calendar');}}
+            style={{background:`linear-gradient(135deg,${T.primary},${T.secondary})`,borderRadius:18,
+              padding:'16px 22px',cursor:'pointer',display:'flex',alignItems:'center',
+              justifyContent:'space-between',boxShadow:`0 8px 24px ${T.shadow}`,animationDelay:'0.1s'}}>
+            <div>
+              <div style={{color:'#FFF',fontWeight:700,fontSize:15}}>Log Today</div>
+              <div style={{color:'rgba(255,255,255,0.75)',fontSize:11,marginTop:1}}>Flow, mood & symptoms</div>
+            </div>
+            <div style={{fontSize:24}}>📝</div>
+          </div>
+
+          {/* Today summary */}
+          {(pLogs[today]?.flow||mLogs[today]?.length>0||sLogs[today]?.length>0)&&
+          <div className="fade-up" style={{background:T.card,borderRadius:18,padding:18,
+            border:`1px solid ${T.cardBorder}`,backdropFilter:'blur(20px)',animationDelay:'0.15s'}}>
+            <h3 style={{margin:'0 0 10px',fontSize:14,fontWeight:700,color:T.text}}>Today's Log</h3>
+            <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+              {pLogs[today]?.flow&&pLogs[today].flow!=='none'&&<span style={{padding:'5px 10px',borderRadius:10,fontSize:11,fontWeight:600,
+                background:`${T.periodDay}20`,color:T.periodDay}}>
+                {FLOW_LEVELS.find(f=>f.id===pLogs[today].flow)?.icon} {FLOW_LEVELS.find(f=>f.id===pLogs[today].flow)?.label}
+              </span>}
+              {mLogs[today]?.map(m=><span key={m} style={{padding:'5px 10px',borderRadius:10,fontSize:11,
+                background:`${MOODS.find(mo=>mo.label===m)?.color||T.accent}28`}}>
+                {MOODS.find(mo=>mo.label===m)?.emoji} {m}
+              </span>)}
+              {sLogs[today]?.map(s=><span key={s} style={{padding:'5px 10px',borderRadius:10,fontSize:11,
+                fontWeight:500,background:`${T.accent}18`,color:T.accent}}>{s}</span>)}
+            </div>
+          </div>}
+
+          {/* Pattern */}
+          <div className="fade-up" style={{background:T.card,borderRadius:18,padding:18,
+            border:`1px solid ${T.cardBorder}`,animationDelay:'0.2s'}}>
+            <h3 style={{margin:'0 0 8px',fontSize:14,fontWeight:700,color:T.text}}>💡 Your Pattern</h3>
+            <p style={{margin:0,fontSize:12,color:T.textSec,lineHeight:1.6}}>
+              {pred.cycles.length>=3
+                ?`Cycles range ${Math.min(...pred.cycles)}-${Math.max(...pred.cycles)} days. Keep logging — predictions get better with more data!`
+                :'Keep logging! After a few cycles I\'ll spot your unique patterns. Even irregular cycles have rhythms.'}
+            </p>
+          </div>
+        </div>}
+
+        {/* ═══ CALENDAR ═══ */}
+        {tab==='calendar'&&<div style={{display:'flex',flexDirection:'column',gap:14}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'2px 0'}}>
+            <button onClick={()=>{if(calM===0){setCalM(11);setCalY(calY-1);}else setCalM(calM-1);}}
+              style={{background:T.card,border:`1px solid ${T.cardBorder}`,borderRadius:11,width:38,height:38,
+                cursor:'pointer',fontSize:17,color:T.text,display:'flex',alignItems:'center',justifyContent:'center'}}>‹</button>
+            <button onClick={()=>{setCalM(new Date().getMonth());setCalY(new Date().getFullYear());}}
+              style={{background:`${T.primary}15`,border:'none',borderRadius:11,padding:'7px 14px',
+                cursor:'pointer',fontSize:12,fontWeight:700,color:T.primary}}>Today</button>
+            <button onClick={()=>{if(calM===11){setCalM(0);setCalY(calY+1);}else setCalM(calM+1);}}
+              style={{background:T.card,border:`1px solid ${T.cardBorder}`,borderRadius:11,width:38,height:38,
+                cursor:'pointer',fontSize:17,color:T.text,display:'flex',alignItems:'center',justifyContent:'center'}}>›</button>
+          </div>
+
+          <div style={{background:T.card,borderRadius:22,padding:18,border:`1px solid ${T.cardBorder}`,
+            backdropFilter:'blur(20px)',boxShadow:`0 8px 30px ${T.shadow}`}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:3,justifyItems:'center'}}>
+              {DAYS.map((d,i)=><div key={i} style={{fontSize:10,fontWeight:700,color:T.textSec,
+                padding:'3px 0',letterSpacing:0.5}}>{d}</div>)}
+              {calCells}
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div style={{background:T.card,borderRadius:16,padding:'12px 16px',border:`1px solid ${T.cardBorder}`,
+            display:'flex',flexWrap:'wrap',gap:10}}>
+            {[{c:T.periodDay,l:'Period'},{c:T.predictDay,l:'Predicted'},{c:T.fertileDay,l:'Fertile'},{c:T.ovDay,l:'Ovulation'}].map(i=>
+              <div key={i.l} style={{display:'flex',alignItems:'center',gap:5}}>
+                <div style={{width:12,height:12,borderRadius:4,background:i.c}}/>
+                <span style={{fontSize:11,color:T.textSec}}>{i.l}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Log sheet */}
+          {logOpen&&<div className="scale-in" style={{background:T.card,borderRadius:22,padding:22,
+            border:`1px solid ${T.cardBorder}`,backdropFilter:'blur(20px)',boxShadow:`0 8px 30px ${T.shadow}`}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
+              <h3 style={{margin:0,fontSize:16,fontWeight:700,color:T.text,fontFamily:T.hFont}}>
+                {selDate.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}
+              </h3>
+              <div onClick={()=>setLogOpen(false)} style={{cursor:'pointer',fontSize:16,color:T.textSec,
+                width:30,height:30,display:'flex',alignItems:'center',justifyContent:'center',
+                borderRadius:10,background:`${T.textSec}12`}}>✕</div>
+            </div>
+
+            <p style={{margin:'0 0 8px',fontSize:12,fontWeight:700,color:T.text}}>Flow</p>
+            <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:16}}>
+              {FLOW_LEVELS.map(f=><div key={f.id} onClick={()=>logFlow(f.id)}
+                style={{padding:'9px 12px',borderRadius:13,cursor:'pointer',
+                  background:pLogs[selK]?.flow===f.id?`${T.primary}20`:`${T.textSec}08`,
+                  border:`1.5px solid ${pLogs[selK]?.flow===f.id?T.primary:'transparent'}`,
+                  transition:'all 0.15s',textAlign:'center'}}>
+                <div style={{fontSize:14}}>{f.icon}</div>
+                <div style={{fontSize:10,fontWeight:600,color:T.text,marginTop:2}}>{f.label}</div>
+              </div>)}
+            </div>
+
+            <p style={{margin:'0 0 8px',fontSize:12,fontWeight:700,color:T.text}}>Mood</p>
+            <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:16}}>
+              {MOODS.map(m=><div key={m.label} onClick={()=>logMood(m.label)}
+                style={{padding:'7px 11px',borderRadius:12,cursor:'pointer',display:'flex',
+                  alignItems:'center',gap:5,fontSize:12,fontWeight:500,color:T.text,
+                  background:mLogs[selK]?.includes(m.label)?`${m.color}30`:`${T.textSec}08`,
+                  border:`1.5px solid ${mLogs[selK]?.includes(m.label)?m.color:'transparent'}`,
+                  transition:'all 0.15s'}}>
+                <span style={{fontSize:15}}>{m.emoji}</span>{m.label}
+              </div>)}
+            </div>
+
+            <p style={{margin:'0 0 8px',fontSize:12,fontWeight:700,color:T.text}}>Symptoms</p>
+            <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:16}}>
+              {SYMPTOMS.map(s=><div key={s} onClick={()=>logSym(s)}
+                style={{padding:'7px 12px',borderRadius:12,cursor:'pointer',fontSize:11,fontWeight:500,
+                  background:sLogs[selK]?.includes(s)?`${T.accent}20`:`${T.textSec}08`,
+                  border:`1.5px solid ${sLogs[selK]?.includes(s)?T.accent:'transparent'}`,
+                  color:T.text,transition:'all 0.15s'}}>{s}</div>)}
+            </div>
+
+            <p style={{margin:'0 0 8px',fontSize:12,fontWeight:700,color:T.text}}>Notes</p>
+            <textarea value={notesLS[selK]||''} onChange={e=>setNotesLS(p=>({...p,[selK]:e.target.value}))}
+              placeholder="How are you feeling..."
+              style={{width:'100%',minHeight:70,borderRadius:13,border:`1.5px solid ${T.cardBorder}`,
+                background:`${T.textSec}08`,padding:12,fontSize:13,color:T.text,
+                resize:'vertical',outline:'none',marginBottom:14}}/>
+
+            <button onClick={saveLog}
+              style={{width:'100%',padding:'13px',borderRadius:14,border:'none',cursor:'pointer',
+                background:`linear-gradient(135deg,${T.primary},${T.secondary})`,
+                color:'#fff',fontSize:14,fontWeight:700,boxShadow:`0 5px 18px ${T.shadow}`}}>
+              💾 Save Log
+            </button>
+          </div>}
+        </div>}
+
+        {/* ═══ CHAT ═══ */}
+        {tab==='chat'&&<div style={{display:'flex',flexDirection:'column',height:'calc(100vh - 170px)'}}>
+          {!geminiKey ? (
+            <ApiKeyGuide T={T} onSave={(k) => { setGeminiKey(k); showToast('Wyar is ready! 🌸'); }} />
+          ) : (
+            <>
+              <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:10,paddingBottom:10}}>
+                {msgs.length===0&&<div style={{textAlign:'center',padding:'32px 16px',display:'flex',
+                  flexDirection:'column',alignItems:'center',gap:12}}>
+                  <div style={{fontSize:48}}>🌸</div>
+                  <h3 style={{margin:0,fontSize:17,fontWeight:700,color:T.text,fontFamily:T.hFont}}>Hi Gul Jaane!</h3>
+                  <p style={{margin:0,fontSize:13,color:T.textSec,lineHeight:1.6,maxWidth:260}}>
+                    I'm Wyar — your health companion. Ask me anything about your cycle, symptoms, or just talk! 💕
+                  </p>
+                  <div style={{display:'flex',flexDirection:'column',gap:7,width:'100%'}}>
+                    {["When is my next period?","Why am I tired before periods?","What helps with cramps?","Is my cycle normal?"].map(q=>
+                      <div key={q} onClick={()=>setChatIn(q)}
+                        style={{padding:'11px 14px',borderRadius:14,cursor:'pointer',background:T.card,
+                          border:`1px solid ${T.cardBorder}`,fontSize:12,color:T.text,textAlign:'left',
+                          boxShadow:`0 2px 8px ${T.shadow}`}}>{q}</div>
+                    )}
+                  </div>
+                </div>}
+                {msgs.map((m,i)=><div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start'}}>
+                  <div style={{maxWidth:'82%',padding:'11px 15px',borderRadius:18,
+                    background:m.role==='user'?T.chatUser:T.chatAI,
+                    color:m.role==='user'?'#FFF':T.text,fontSize:13,lineHeight:1.55,
+                    borderBottomRightRadius:m.role==='user'?5:18,
+                    borderBottomLeftRadius:m.role==='user'?18:5,
+                    boxShadow:`0 2px 8px ${T.shadow}`,
+                    border:m.role!=='user'?`1px solid ${T.cardBorder}`:'none',
+                    whiteSpace:'pre-wrap',wordBreak:'break-word'}}>{m.content}</div>
+                </div>)}
+                {chatLoad&&<div style={{display:'flex',justifyContent:'flex-start'}}>
+                  <div style={{padding:'13px 18px',borderRadius:18,borderBottomLeftRadius:5,
+                    background:T.chatAI,border:`1px solid ${T.cardBorder}`,display:'flex',gap:5}}>
+                    {[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:'50%',
+                      background:T.primary,animation:`pulse3 1.2s ease-in-out ${i*0.2}s infinite`,opacity:0.6}}/>)}
+                  </div>
+                </div>}
+                <div ref={chatRef}/>
+              </div>
+              <div style={{display:'flex',gap:9,padding:'10px 0',alignItems:'flex-end'}}>
+                <input value={chatIn} onChange={e=>setChatIn(e.target.value)}
+                  onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&sendChat()}
+                  placeholder="Ask anything about your cycle..."
+                  style={{flex:1,padding:'13px 16px',borderRadius:18,border:`1.5px solid ${T.cardBorder}`,
+                    background:T.card,fontSize:13,color:T.text,outline:'none'}}/>
+                <button onClick={sendChat} disabled={chatLoad||!chatIn.trim()}
+                  style={{width:44,height:44,borderRadius:'50%',border:'none',
+                    background:chatIn.trim()?`linear-gradient(135deg,${T.primary},${T.secondary})`:T.cardBorder,
+                    color:'#FFF',fontSize:18,cursor:chatIn.trim()?'pointer':'default',
+                    display:'flex',alignItems:'center',justifyContent:'center',
+                    boxShadow:chatIn.trim()?`0 4px 14px ${T.shadow}`:'none'}}>↑</button>
+              </div>
+              <button onClick={()=>{if(window.confirm('Clear AI API key?')){setGeminiKey('');setMsgs([]);}}}
+                style={{background:'none',border:'none',color:T.textSec,fontSize:11,cursor:'pointer',
+                  padding:'4px 0',textAlign:'center',textDecoration:'underline'}}>
+                Change API key
+              </button>
+            </>
+          )}
+        </div>}
+
+
+
+        {/* ═══ NOTES ═══ */}
+        {tab==='notes'&&<NotesTab T={T} showToast={showToast}/>}
+
+        {/* ═══ VAULT ═══ */}
+        {tab==='vault'&&<VaultTab T={T} showToast={showToast}/>}
+
+        {/* ═══ INSIGHTS ═══ */}
+        {tab==='insights'&&<div style={{display:'flex',flexDirection:'column',gap:14}}>
+          <div className="fade-up" style={{background:T.card,borderRadius:22,padding:22,
+            border:`1px solid ${T.cardBorder}`,boxShadow:`0 8px 30px ${T.shadow}`}}>
+            <h3 style={{margin:'0 0 14px',fontSize:16,fontWeight:700,color:T.text,fontFamily:T.hFont}}>📊 Cycle History</h3>
+            {pred.cycles.length>0?<div>
+              <div style={{display:'flex',gap:7,flexWrap:'wrap',marginBottom:14}}>
+                {pred.cycles.map((c,i)=><div key={i} style={{padding:'9px 14px',borderRadius:12,
+                  background:`${T.primary}15`,textAlign:'center'}}>
+                  <div style={{fontSize:18,fontWeight:800,color:T.primary,fontFamily:T.hFont}}>{c}</div>
+                  <div style={{fontSize:9,color:T.textSec,marginTop:1}}>days</div>
+                </div>)}
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:T.textSec}}>
+                <span>Min: {Math.min(...pred.cycles)}d</span>
+                <span>Avg: {pred.avg}d</span>
+                <span>Max: {Math.max(...pred.cycles)}d</span>
+              </div>
+            </div>:<p style={{margin:0,fontSize:12,color:T.textSec}}>Log 2+ periods to see history.</p>}
+          </div>
+          <div className="fade-up" style={{background:T.card,borderRadius:22,padding:22,
+            border:`1px solid ${T.cardBorder}`,animationDelay:'0.05s'}}>
+            <h3 style={{margin:'0 0 14px',fontSize:16,fontWeight:700,color:T.text,fontFamily:T.hFont}}>😊 Mood Patterns</h3>
+            {Object.keys(mLogs).length>0?(()=>{
+              const mc={};Object.values(mLogs).forEach(ms=>ms.forEach(m=>{mc[m]=(mc[m]||0)+1;}));
+              const s=Object.entries(mc).sort(([,a],[,b])=>b-a),mx=s[0]?.[1]||1;
+              return <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {s.map(([mood,cnt])=>{const m=MOODS.find(x=>x.label===mood);return(
+                  <div key={mood} style={{display:'flex',alignItems:'center',gap:8}}>
+                    <span style={{fontSize:16,width:22}}>{m?.emoji}</span>
+                    <div style={{flex:1,height:20,borderRadius:7,background:`${m?.color||T.accent}20`,position:'relative',overflow:'hidden'}}>
+                      <div style={{height:'100%',borderRadius:7,background:`${m?.color||T.accent}55`,width:`${(cnt/mx)*100}%`,transition:'width 0.4s'}}/>
+                      <span style={{position:'absolute',left:8,top:'50%',transform:'translateY(-50%)',
+                        fontSize:10,fontWeight:700,color:T.text}}>{mood} ({cnt})</span>
+                    </div>
+                  </div>);})}
+              </div>;
+            })():<p style={{margin:0,fontSize:12,color:T.textSec}}>Log moods to see patterns.</p>}
+          </div>
+          <div className="fade-up" style={{background:T.card,borderRadius:22,padding:22,
+            border:`1px solid ${T.cardBorder}`,animationDelay:'0.1s'}}>
+            <h3 style={{margin:'0 0 14px',fontSize:16,fontWeight:700,color:T.text,fontFamily:T.hFont}}>🩺 Symptoms</h3>
+            {Object.keys(sLogs).length>0?(()=>{
+              const sc={};Object.values(sLogs).forEach(ss=>ss.forEach(s=>{sc[s]=(sc[s]||0)+1;}));
+              const sorted=Object.entries(sc).sort(([,a],[,b])=>b-a);
+              return <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
+                {sorted.map(([sym,cnt])=><div key={sym} style={{padding:'8px 14px',borderRadius:12,
+                  background:`${T.accent}15`,border:`1px solid ${T.accent}25`}}>
+                  <span style={{fontSize:12,fontWeight:600,color:T.text}}>{sym}</span>
+                  <span style={{fontSize:10,color:T.textSec,marginLeft:5}}>×{cnt}</span>
+                </div>)}
+              </div>;
+            })():<p style={{margin:0,fontSize:12,color:T.textSec}}>Log symptoms to track them.</p>}
+          </div>
+          <div className="fade-up" style={{background:T.card,borderRadius:22,padding:22,
+            border:`1px solid ${T.cardBorder}`,animationDelay:'0.15s'}}>
+            <h3 style={{margin:'0 0 10px',fontSize:16,fontWeight:700,color:T.text,fontFamily:T.hFont}}>💕 Tips</h3>
+            <div style={{fontSize:12,color:T.textSec,lineHeight:1.8}}>
+              <p style={{margin:'0 0 5px'}}>Your 1-2 day light start is normal — your body warming up!</p>
+              <p style={{margin:'0 0 5px'}}>🧘‍♀️ Less stress helps regulate cycles</p>
+              <p style={{margin:'0 0 5px'}}>🥗 Iron-rich foods support heavy flow days</p>
+              <p style={{margin:'0 0 5px'}}>💤 Consistent sleep helps hormones balance</p>
+              <p style={{margin:0}}>📱 More data = better predictions!</p>
+            </div>
+          </div>
+        </div>}
+
+                {/* ═══ SETTINGS ═══ */}
+        {tab==='settings'&&<div style={{display:'flex',flexDirection:'column',gap:14}}>
+          <div className="fade-up" style={{background:T.card,borderRadius:22,padding:22,
+            border:`1px solid ${T.cardBorder}`,boxShadow:`0 8px 30px ${T.shadow}`,textAlign:'center'}}>
+            <div style={{width:68,height:68,borderRadius:'50%',margin:'0 auto 14px',
+              background:`linear-gradient(135deg,${T.primary},${T.secondary})`,
+              display:'flex',alignItems:'center',justifyContent:'center',fontSize:30,
+              boxShadow:`0 4px 18px ${T.glow}`,animation:'heartbeat 2.5s ease-in-out infinite'}}>🌸</div>
+            <h3 style={{margin:'0 0 3px',fontSize:18,fontWeight:700,color:T.text,fontFamily:T.hFont}}>Gullalay Khan</h3>
+            <p style={{margin:0,fontSize:12,color:T.textSec}}>Your health, your way 💕</p>
+          </div>
+
+          <div className="fade-up" style={{background:T.card,borderRadius:22,padding:'14px 18px',
+            border:`1px solid ${T.cardBorder}`,animationDelay:'0.03s',display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            {[{icon:'📊',label:'Insights',tab:'insights'},{icon:'📝',label:'Notes',tab:'notes'}].map(item=>(
+              <div key={item.tab} onClick={()=>setTab(item.tab)}
+                style={{padding:'14px',borderRadius:14,cursor:'pointer',textAlign:'center',
+                  background:`${T.primary}12`,border:`1px solid ${T.primary}20`}}>
+                <div style={{fontSize:22,marginBottom:4}}>{item.icon}</div>
+                <div style={{fontSize:12,fontWeight:700,color:T.text}}>{item.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="fade-up" style={{background:T.card,borderRadius:22,padding:22,
+            border:`1px solid ${T.cardBorder}`,animationDelay:'0.05s'}}>
+            <h3 style={{margin:'0 0 14px',fontSize:16,fontWeight:700,color:T.text}}>🎨 Themes ({Object.keys(THEMES).length})</h3>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8}}>
+              {Object.entries(THEMES).map(([k,t])=><div key={k} onClick={()=>setThemeKey(k)}
+                style={{padding:'12px 14px',borderRadius:14,cursor:'pointer',background:t.bg,
+                  border:`2px solid ${themeKey===k?t.primary:'transparent'}`,
+                  display:'flex',alignItems:'center',gap:8,transition:'all 0.2s',
+                  boxShadow:themeKey===k?`0 4px 12px ${t.shadow}`:'none'}}>
+                <span style={{fontSize:18}}>{t.icon}</span>
+                <div>
+                  <div style={{fontSize:11,fontWeight:700,color:t.text}}>{t.name}</div>
+                  {themeKey===k&&<div style={{fontSize:9,color:t.primary,fontWeight:800}}>● Active</div>}
+                </div>
+              </div>)}
+            </div>
+          </div>
+
+          <div className="fade-up" style={{background:T.card,borderRadius:22,padding:22,
+            border:`1px solid ${T.cardBorder}`,animationDelay:'0.1s'}}>
+            <h3 style={{margin:'0 0 12px',fontSize:16,fontWeight:700,color:T.text}}>📱 Your Data</h3>
+            <p style={{margin:'0 0 14px',fontSize:12,color:T.textSec,lineHeight:1.6}}>
+              Everything stays privately on your device. Nothing is sent anywhere except when chatting with Wyar.
+            </p>
+            <div style={{display:'flex',gap:8}}>
+              <button onClick={()=>{
+                const d=JSON.stringify({pLogs,mLogs,sLogs,notes:notesLS,theme:themeKey});
+                const b=new Blob([d],{type:'application/json'}),u=URL.createObjectURL(b);
+                const a=document.createElement('a');a.href=u;a.download='gullalay-backup.json';a.click();
+                URL.revokeObjectURL(u); showToast('Data exported! 💕');
+              }} style={{flex:1,padding:'11px',borderRadius:13,border:`1.5px solid ${T.primary}`,
+                background:'transparent',color:T.primary,fontSize:12,fontWeight:700,cursor:'pointer'}}>
+                Export Backup
+              </button>
+              <button onClick={()=>{
+                if(window.confirm('Clear ALL data? This cannot be undone!')){
+                  setPLogs({});setMLogs({});setSLogs({});setNotesLS({});setMsgs([]);
+                  showToast('Data cleared');
+                }
+              }} style={{flex:1,padding:'11px',borderRadius:13,border:'1.5px solid #FF6B6B',
+                background:'transparent',color:'#FF6B6B',fontSize:12,fontWeight:700,cursor:'pointer'}}>
+                Clear Data
+              </button>
+            </div>
+          </div>
+
+          <div className="fade-up" style={{background:T.card,borderRadius:22,padding:22,
+            border:`1px solid ${T.cardBorder}`,animationDelay:'0.15s'}}>
+            <h3 style={{margin:'0 0 10px',fontSize:16,fontWeight:700,color:T.text}}>🤖 Wyar AI</h3>
+            <p style={{margin:'0 0 12px',fontSize:12,color:T.textSec}}>
+              {geminiKey ? '✅ Wyar AI connected' : '❌ No API key — go to the Chat tab to connect'}
+            </p>
+            {geminiKey && <button onClick={()=>{if(window.confirm('Remove API key?')){setGeminiKey('');setMsgs([]);}}}
+              style={{width:'100%',padding:'11px',borderRadius:13,border:`1.5px solid ${T.accent}`,
+                background:'transparent',color:T.accent,fontSize:12,fontWeight:700,cursor:'pointer'}}>
+              Change API Key
+            </button>}
+          </div>
+
+          <div style={{textAlign:'center',padding:'8px 0 20px'}}>
+            <p style={{margin:0,fontSize:11,color:T.textSec}}>Made with love for Gullalay 💕 v3.0</p>
+          </div>
+        </div>}
+      </div>
+
+      {/* Tab Bar */}
+      <div style={{position:'fixed',bottom:0,left:'50%',transform:'translateX(-50%)',width:'100%',
+        maxWidth:430,background:T.navBg,backdropFilter:'blur(24px)',
+        borderTop:`0.5px solid ${T.cardBorder}`,display:'flex',justifyContent:'space-around',
+        alignItems:'center',padding:`8px 6px calc(env(safe-area-inset-bottom,20px) + 4px)`,zIndex:50}}>
+        {[{id:'home',icon:'🏠',l:'Home'},{id:'calendar',icon:'📅',l:'Track'},
+          {id:'chat',icon:'💬',l:'Wyar'},{id:'notes',icon:'📝',l:'Notes'},
+          {id:'vault',icon:'🔐',l:'Vault'},{id:'settings',icon:'⚙️',l:'More'}].map(t=>(
+          <div key={t.id} onClick={()=>setTab(t.id)}
+            style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3,
+              cursor:'pointer',padding:'2px 6px',borderRadius:10}}>
+            <span style={{fontSize:19,filter:tab===t.id?'none':'grayscale(0.4)',
+              opacity:tab===t.id?1:0.5,transition:'all 0.2s'}}>{t.icon}</span>
+            <span style={{fontSize:9,fontWeight:tab===t.id?800:500,
+              color:tab===t.id?T.tabActive:T.tabInactive,transition:'all 0.15s'}}>{t.l}</span>
+            {tab===t.id&&<div style={{width:4,height:4,borderRadius:2,background:T.primary,marginTop:-2}}/>}
+          </div>
+        ))}
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{position:'fixed',bottom:`calc(82px + env(safe-area-inset-bottom,0px))`,
+          left:'50%',transform:'translateX(-50%)',
+          background:toast.isLove?`linear-gradient(135deg,${T.primary},${T.secondary})`:'rgba(0,0,0,0.82)',
+          backdropFilter:'blur(20px)',color:'#fff',padding:'12px 20px',borderRadius:20,
+          fontSize:13,fontWeight:600,zIndex:999,maxWidth:'88vw',textAlign:'center',lineHeight:1.5,
+          boxShadow:toast.isLove?`0 8px 28px ${T.shadow}`:'0 4px 20px rgba(0,0,0,0.3)',
+          animation:'scaleIn 0.3s ease-out both',whiteSpace:'pre-wrap'}}>
+          {toast.msg}
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App/>);
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('SW registered'))
+      .catch(err => console.log('SW failed:', err));
+  });
+}
+</script>
+</body>
+</html>
