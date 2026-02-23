@@ -526,7 +526,7 @@ function VaultTab({ T, showToast }) {
     return (
       <div style={{position:'fixed',inset:0,zIndex:500,background:'rgba(0,0,0,0.97)',
         display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:16}}>
-        <div style={{position:'absolute',top:'calc(env(safe-area-inset-top,12px) + 10px)',left:16,right:16,
+        <div style={{position:'absolute',top:'calc(env(safe-area-inset-top,44px) + 10px)',left:16,right:16,
           display:'flex',justifyContent:'space-between',alignItems:'center'}}>
           <button onClick={()=>setViewPhoto(null)}
             style={{background:'rgba(255,255,255,0.12)',border:'none',borderRadius:10,padding:'8px 14px',
@@ -946,7 +946,7 @@ Personality: Warm, loving, encouraging. NEVER judge. Speak like a trusted best f
         background:T.glow,filter:'blur(70px)',pointerEvents:'none',zIndex:0}}/>
 
       {/* Header */}
-      <div style={{padding:`calc(env(safe-area-inset-top,12px) + 10px) 20px 10px`,
+      <div style={{padding:`calc(env(safe-area-inset-top,44px) + 10px) 20px 10px`,
         display:'flex',alignItems:'center',justifyContent:'space-between',position:'relative',zIndex:10}}>
         <div>
           <h1 style={{margin:0,fontSize:21,fontWeight:700,color:T.text,fontFamily:T.hFont,letterSpacing:-0.3}}>
@@ -1391,7 +1391,7 @@ Personality: Warm, loving, encouraging. NEVER judge. Speak like a trusted best f
       <div style={{position:'fixed',bottom:0,left:'50%',transform:'translateX(-50%)',width:'100%',
         maxWidth:430,background:T.navBg,backdropFilter:'blur(24px)',
         borderTop:`0.5px solid ${T.cardBorder}`,display:'flex',justifyContent:'space-around',
-        alignItems:'center',padding:`8px 6px calc(env(safe-area-inset-bottom,20px) + 4px)`,zIndex:50}}>
+        alignItems:'center',padding:`8px 6px calc(env(safe-area-inset-bottom,20px) + 8px)`,zIndex:50}}>
         {[{id:'home',icon:'🏠',l:'Home'},{id:'calendar',icon:'📅',l:'Track'},
           {id:'chat',icon:'💬',l:'Wyar'},{id:'notes',icon:'📝',l:'Notes'},
           {id:'vault',icon:'🔐',l:'Vault'},{id:'settings',icon:'⚙️',l:'More'}].map(t=>(
