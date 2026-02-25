@@ -657,6 +657,150 @@ function VaultTab({ T, showToast }) {
   );
 }
 
+// ─── Apology (just for 2026-02-25) ───────────────────────────────────────────
+const APOLOGY_DATE = '2026-02-25';
+
+function ApologyPopup({ T, onEnter, onSkip }) {
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:9998,
+      background:'rgba(255,240,248,0.96)',backdropFilter:'blur(12px)',
+      display:'flex',alignItems:'center',justifyContent:'center',padding:24,
+      animation:'fadeUp 0.5s ease-out both'}}>
+      <div style={{background:'linear-gradient(160deg,#fff5f8,#ffe8f2,#fff0f5)',
+        border:'1px solid rgba(255,150,190,0.3)',borderRadius:28,
+        padding:'40px 28px',maxWidth:360,width:'100%',textAlign:'center',
+        boxShadow:'0 24px 60px rgba(255,100,160,0.15)'}}>
+        <div style={{fontSize:56,marginBottom:16,animation:'heartbeat 2.5s ease-in-out infinite',
+          filter:'drop-shadow(0 0 16px rgba(255,130,180,0.5))'}}>🌸</div>
+        <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:22,
+          fontWeight:700,fontStyle:'italic',color:'#C2185B',
+          marginBottom:10,lineHeight:1.5}}>
+          Gul Jaane —<br/>I have something for you.
+        </div>
+        <div style={{fontSize:13,color:'rgba(180,80,120,0.6)',lineHeight:1.7,marginBottom:28}}>
+          Just a few words. From me to you. 💙
+        </div>
+        <button onClick={onEnter}
+          style={{width:'100%',padding:'15px',borderRadius:16,border:'none',cursor:'pointer',
+            background:'linear-gradient(135deg,#F48FB1,#E91E8C,#C2185B)',
+            color:'#fff',fontSize:15,fontWeight:800,fontFamily:'Nunito,sans-serif',
+            boxShadow:'0 8px 24px rgba(233,30,140,0.3)',marginBottom:12}}>
+          I'm here 💜
+        </button>
+        <button onClick={onSkip}
+          style={{background:'none',border:'none',color:'rgba(200,100,140,0.35)',
+            fontSize:11,cursor:'pointer',fontFamily:'Nunito,sans-serif',
+            animation:'blink 3s ease-in-out infinite'}}>
+          not right now
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ApologyLetter({ T, onClose }) {
+  const cards = [
+    {
+      emoji: '🌷',
+      text: `I never feel proud making you feel that way. It kills me inside. The grief overtakes me so badly sometimes that I don't know how to handle it — and I hate that it touches you. I'm sorry.`
+    },
+    {
+      emoji: '🤍',
+      text: `I want you with me through the hard parts. Always.`
+    },
+    {
+      emoji: '💌',
+      pashto: true,
+      text: `Ma na agha har sa ma akhala kom che ba tata warha lagi khu mata der mayni lari. Ta ghusa ao khafgan ba jaiz wi khu bas za der sakht zai ke gair sham ao bya nor sa hum na kegi.`
+    },
+    {
+      emoji: '🌸',
+      pashto: true,
+      label: 'About Ammi —',
+      text: `She just misses her son. Nothing more. Aghe bas ase gap lagao ao domra khu ba sok sa wai kana. Dase hum na wi che za ba pake ado azmawegam na. Khu che ta we kana har sa ba oshi.`
+    },
+    {
+      emoji: '💙',
+      text: `I will always come back to you. Always choose you. That part never changes, no matter what.`
+    },
+  ];
+
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:9997,overflowY:'auto',
+      WebkitOverflowScrolling:'touch',
+      background:'linear-gradient(160deg,#fff5f8,#fce4ec,#fff0f5,#fdf6ff)',
+      padding:`calc(env(safe-area-inset-top,44px) + 16px) 20px calc(env(safe-area-inset-bottom,20px) + 48px)`}}>
+
+      {/* Soft glow blobs */}
+      <div style={{position:'fixed',top:-60,right:-40,width:220,height:220,borderRadius:'50%',
+        background:'#F48FB1',filter:'blur(80px)',opacity:0.25,pointerEvents:'none'}}/>
+      <div style={{position:'fixed',bottom:100,left:-60,width:200,height:200,borderRadius:'50%',
+        background:'#CE93D8',filter:'blur(80px)',opacity:0.2,pointerEvents:'none'}}/>
+
+      <div style={{maxWidth:400,margin:'0 auto',display:'flex',flexDirection:'column',gap:14,position:'relative',zIndex:1}}>
+
+        {/* Header */}
+        <div style={{textAlign:'center',padding:'12px 0 6px'}}>
+          <div style={{fontSize:44,filter:'drop-shadow(0 0 12px rgba(255,130,180,0.5))',
+            animation:'heartbeat 2.5s ease-in-out infinite'}}>🌸</div>
+          <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:22,fontWeight:700,
+            fontStyle:'italic',color:'#C2185B',marginTop:10,lineHeight:1.4}}>
+            Zama Lalay —
+          </div>
+        </div>
+
+        {/* Cards */}
+        {cards.map((card, i) => (
+          <div key={i} style={{background:'rgba(255,255,255,0.85)',
+            border:'1px solid rgba(255,150,190,0.25)',
+            borderRadius:22,padding:'22px 20px',
+            backdropFilter:'blur(20px)',
+            boxShadow:'0 4px 24px rgba(255,100,160,0.08)',
+            animation:`fadeUp 0.5s ease-out ${i*0.08}s both`}}>
+            <div style={{display:'flex',gap:14,alignItems:'flex-start'}}>
+              <span style={{fontSize:22,flexShrink:0,marginTop:2}}>{card.emoji}</span>
+              <div>
+                {card.label && (
+                  <div style={{fontSize:12,fontWeight:800,color:'#E91E8C',
+                    marginBottom:6,letterSpacing:'0.3px'}}>{card.label}</div>
+                )}
+                <div style={{fontSize:14.5,lineHeight:1.85,fontWeight:500,
+                  color: card.pashto ? 'rgba(160,60,110,0.8)' : '#5D1A35',
+                  fontStyle: card.pashto ? 'italic' : 'normal'}}>
+                  {card.text}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* Sign off */}
+        <div style={{background:'linear-gradient(135deg,rgba(255,182,213,0.3),rgba(206,147,216,0.2))',
+          border:'1px solid rgba(255,150,190,0.25)',
+          borderRadius:22,padding:'24px 20px',textAlign:'center',
+          animation:'fadeUp 0.5s ease-out 0.45s both'}}>
+          <div style={{fontSize:26,letterSpacing:6,marginBottom:12}}>💋💋💋</div>
+          <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,
+            fontStyle:'italic',color:'rgba(180,60,110,0.75)',lineHeight:1.8,marginBottom:12}}>
+            Yours forever —
+          </div>
+          <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:22,
+            fontWeight:700,fontStyle:'italic',color:'#C2185B'}}>— Afaq 💙</div>
+        </div>
+
+        <button onClick={onClose}
+          style={{width:'100%',padding:'14px',borderRadius:16,border:'none',cursor:'pointer',
+            background:'rgba(233,30,140,0.08)',color:'rgba(180,60,110,0.6)',
+            fontSize:13,fontWeight:700,fontFamily:'Nunito,sans-serif',
+            border:'1px solid rgba(233,30,140,0.12)'}}>
+          Take me to the app 🌸
+        </button>
+
+      </div>
+    </div>
+  );
+}
+
 // ─── Splash Screen ────────────────────────────────────────────────────────────
 function Splash({ T, onClose }) {
   const poem = useMemo(() => PASHTO_POETRY[Math.floor(Math.random() * PASHTO_POETRY.length)], []);
@@ -772,6 +916,9 @@ function App() {
   const [themePick, setThemePick] = useState(false);
   const [showOnb, setShowOnb] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const todayStr = new Date().toISOString().slice(0,10);
+  const [showApologyPopup, setShowApologyPopup] = useState(() => todayStr === APOLOGY_DATE && localStorage.getItem('gc_apology_seen') !== APOLOGY_DATE);
+  const [showApologyLetter, setShowApologyLetter] = useState(false);
   const [toast, showToast] = useToast();
   const chatRef = useRef(null);
 
@@ -938,8 +1085,14 @@ Personality: Warm, loving, encouraging. NEVER judge. Speak like a trusted best f
     <div style={{width:'100%',height:'100vh',background:T.bg,display:'flex',flexDirection:'column',
       maxWidth:430,margin:'0 auto',position:'relative',overflow:'hidden'}}>
 
+      {/* Apology — today only */}
+      {showApologyLetter && <ApologyLetter T={T} onClose={()=>{setShowApologyLetter(false);localStorage.setItem('gc_apology_seen',APOLOGY_DATE);}} />}
+      {showApologyPopup && !showApologyLetter && <ApologyPopup T={T}
+        onEnter={()=>{setShowApologyPopup(false);setShowApologyLetter(true);}}
+        onSkip={()=>{setShowApologyPopup(false);localStorage.setItem('gc_apology_seen',APOLOGY_DATE);}} />}
+
       {/* Splash */}
-      {showSplash && <Splash T={T} onClose={() => setShowSplash(false)} />}
+      {showSplash && !showApologyPopup && !showApologyLetter && <Splash T={T} onClose={() => setShowSplash(false)} />}
 
       {/* BG glow */}
       <div style={{position:'fixed',top:-80,right:-60,width:240,height:240,borderRadius:'50%',
